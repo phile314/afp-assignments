@@ -46,16 +46,16 @@ split :: [a] -> [(a, [a])]
 split [] 		= []
 split (x:xs) 	= (x, xs) : [(y, x:ys) | (y, ys) <- split xs]
 
-permsx :: [a] -> [[a]]
-permsx [] = [[]]
-permsx xs = [(v:p) | (v,vs) <- split xs, p <- permsx vs]
+perms :: [a] -> [[a]]
+perms [] = [[]]
+perms xs = [(v:p) | (v,vs) <- split xs, p <- perms vs]
 
 smooth :: (Ord a, Num a) => a -> [a] -> Bool
 smooth n (x:y:ys) 	= abs (y - x) <= n && smooth n (y:ys)
 smooth _ _ 			= True
 
 smooth_perms :: Int -> [Int] -> [[Int]]
-smooth_perms n xs 	= filter (smooth n) (perms' xs)
+smooth_perms n xs 	= filter (smooth n) (perms xs)
 
 allSmoothPerms :: Int -> [Int] -> [[Int]]
 allSmoothPerms n = perms 
