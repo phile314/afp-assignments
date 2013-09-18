@@ -2,6 +2,8 @@ module Afp.As1
   (test, count)
 where
 
+import Test.QuickCheck
+
 -- Assignment 1.1
 -- Cabalize everything
 -- what should we put in the package name?
@@ -40,18 +42,34 @@ count' = counti' 0
 
 
 -- Assignment 7.1
+split :: [a] -> [(a, [a])]
+split [] 		= []
+split (x:xs) 	= (x, xs) : [(y, x:ys) | (y, ys) <- split xs]
 
-split []     = []
-split (x:xs) = (x,xs):[(y,x:ys) | (y,ys) <- split xs]
+permsx :: [a] -> [[a]]
+permsx [] = [[]]
+permsx xs = [(v:p) | (v,vs) <- split xs, p <- permsx vs]
 
-perms [] = [[]]
-perms xs = [(v:p) | (v,vs) <- split xs,p <- perms vs]
-
-smooth n (x:y:ys) = abs (y - x) <= n && smooth n (y:ys)
-smooth _ _        = True
+smooth :: (Ord a, Num a) => a -> [a] -> Bool
+smooth n (x:y:ys) 	= abs (y - x) <= n && smooth n (y:ys)
+smooth _ _ 			= True
 
 smooth_perms :: Int -> [Int] -> [[Int]]
-smooth_perms n xs = filter (smooth n) (perms xs)
+smooth_perms n xs 	= filter (smooth n) (perms' xs)
+
+allSmoothPerms :: Int -> [Int] -> [[Int]]
+allSmoothPerms n = perms 
+	where
+		split 			:: [a] -> [(a, [a])]
+		split [] 		= []
+		split (x:xs) 	= (x, xs) : [(y, x:ys) | (y, ys) <- split xs]
+		perms :: [Int] -> [[Int]]
+		perms [] = [[]]
+		perms xs = [(v:p) | (v,vs) <- split xs, p <- perms vs, smooth (v:p)]		
+		smooth 				:: [Int] -> Bool
+		smooth (w:y:ys) 	= abs (y - w) <= n && smooth (y:ys)
+		smooth _ 			= True
+
 -- Assignment 8.1
 
 
