@@ -54,6 +54,17 @@ library
   build-depends:       base >=4.5, QuickCheck >= 2.5.1.1
 
 
+test-suite signal-tests
+  type:              exitcode-stdio-1.0
+  hs-source-dirs:    test, src
+  main-is:           MainTestSuite.hs
+  build-depends:     base,
+                     QuickCheck,
+                     test-framework,
+                     test-framework-hunit,
+                     test-framework-quickcheck2
+
+
 benchmark signal-bench
   type:             exitcode-stdio-1.0
   hs-source-dirs:   src, bench
