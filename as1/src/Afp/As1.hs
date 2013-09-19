@@ -1,6 +1,8 @@
-module Afp.As1
-  (test, test', count, count', Countable, smooth_perms)
-where
+module Afp.As1 (
+  test, test', count, count', Countable, smooth_perms,
+  -- * Exercise 9.1
+  -- $exc91
+) where
 
 import Test.QuickCheck
 
@@ -79,3 +81,71 @@ allSmoothPerms n = perms
 -- Assignment 9.1
 --
 --
+-- $exc91
+-- Theorem 1 forall xs :: [a], ys :: [a] . length (xs ++ ys) == length (xs) + length (ys)
+-- 
+-- Proof:
+--   Base case, let xs be []
+--   
+--   @
+--     length ([] ++ ys)
+--   = Def. ++
+--     length (ys)
+--   =
+--     0 + length (ys)
+--   = Def. length
+--     length ([]) + length(ys)
+--       qed.
+--   @
+--
+--   Inductive case, Hypothesis  length (xs ++ ys) = length (xs) + length (ys)
+--
+--   @
+--     length (x:xs) + length (ys)
+--   = Def. length
+--     1 + length (xs) + length (ys)
+--   = Hypothesis
+--     1 + length (xs ++ ys)
+--   = Def. length
+--     length (x:(xs ++ ys))
+--   = Def. ++
+--     length ((x:xs) ++ ys)
+--       qed.
+--   @
+-- 
+-- 
+-- Theorem 2 forall t :: Tree a . length (flatten t) = size t
+-- Proof:
+--   Base case
+--
+--   @
+--     length (flatten (Leaf x))
+--   = Def. flatten
+--     length ([x])
+--   = Def. []
+--     length (x:[])
+--   = Def. length
+--     1 + length ([])
+--   = Def. length
+--     1 + 0
+--   =
+--     1
+--   = Def. size
+--     size (Leaf x)
+--       qed.
+--   @
+-- 
+--   Inductive case, to prove:
+--
+--   @
+--     size (Node l r)
+--   = Def. size
+--     size l + size r
+--   =
+--     length ((flatten l) + length (flatten r))
+--   = Theorem 1
+--     length ((flatten l) ++ (flatten r))
+--   = Def. flatten
+--     length (flatten (Node l r))
+--       qed.
+--   @
