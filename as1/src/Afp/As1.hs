@@ -1,5 +1,5 @@
 module Afp.As1
-  (test, count)
+  (test, test', count, count', Countable, smooth_perms)
 where
 
 import Test.QuickCheck
@@ -11,14 +11,16 @@ import Test.QuickCheck
 
 -- Assignment 2.5
 
+-- Should we remove the links??
 -- Creating a varargs function in Haskell is explained on http://www.haskell.org/haskellwiki/Varargs
 -- There is another, different version on http://okmij.org/ftp/Haskell/polyvariadic.html#polyvar-fn ,
 -- but it uses language extensions.
 
-test :: [Int]
-test = [count, count 1 2 3, count "" [True, False] id (+)]
+-- | The test case from the assignment.
+test ::  [Int]
+test =   [count, count 1 2 3, count "" [True, False] id (+)]
 test' :: [Int]
-test' = [count', count' 1 2 3, count' "" [True, False] id (+)]
+test' =  [count', count' 1 2 3, count' "" [True, False] id (+)]
 
 class Countable b where
   counti :: Int -> b
@@ -32,11 +34,11 @@ instance Countable b => Countable (a -> b) where
   counti _ = \x -> counti 0
   counti' acc = \x -> counti' (acc + 1)
 
--- count always returns zero.
+-- | Consumes all available arguments and returns zero.
 count :: Countable a => a
 count = counti 0
 
--- count' returns the number of arguments given.
+-- | Returns the number of arguments given.
 count' :: Countable a => a
 count' = counti' 0
 
