@@ -1,5 +1,5 @@
 module Afp.As1 (
-  test, test', count, count', Countable, smooth_perms,
+  test, test', count, count', Countable, smooth_perms, smooth_perms_fast,
   -- * Exercise 9.1
   -- $exc91
 ) where
