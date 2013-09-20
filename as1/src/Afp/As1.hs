@@ -1,5 +1,5 @@
 module Afp.As1 (
-  test, test', count, count', Countable, smooth_perms, smooth_perms_fast,
+  test, test', count, count', Countable, smooth_perms, smooth_perms_fast, equalSmoothPerms, lengthSmoothPerms
   -- * Exercise 9.1
   -- $exc91
 ) where
@@ -85,7 +85,9 @@ smooth_perms_fast n = perms
 -- Assignment 8.1
 
 -- | Check if the new permutation function gives the same result as the given smooth_perms
-equalSmoothPerms n p = all (`elem` (smooth_perms n p)) (smooth_perms_fast n p)
+equalSmoothPerms n p = let sp1 = smooth_perms n p
+                           sp2 = smooth_perms_fast n p
+                       in all (`elem` sp1) sp2 && all (`elem` sp2) sp1
 
 -- | Check if the length of the permutations is the same for every element
 lengthSmoothPerms n p = all ((==) (length p) . length) (smooth_perms_fast n p)
