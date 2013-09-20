@@ -1,5 +1,5 @@
 module Afp.As1 (
-  test, test', count, count', Countable, smooth_perms, smooth_perms_fast, equalSmoothPerms, lengthSmoothPerms
+  test, test', count, count', Countable, smooth_perms, smooth_perms_fast, allSmoothPerms, lengthSmoothPerms, smooth_perms_tree,
   -- * Exercise 9.1
   -- $exc91
 ) where
@@ -82,19 +82,46 @@ smooth_perms_fast n = perms
 		smooth (w:y:ys) 	= abs (y - w) <= n && smooth (y:ys)
 		smooth _ 			= True
 
-		
+
+data Tree = Root [Tree]
+          | Node Int [Tree] 
+  deriving Show
+
+smooth_perms_tree :: Int -> [Int] ->[[Int]]
+smooth_perms_tree _ [] = [[]]
+smooth_perms_tree n xs = (paths $ length xs) . (prune n) . mkTree $ xs
+
+paths :: Int -> Tree -> [[Int]]
+paths len (Root ns) = concat $ map (paths' len []) ns
+  where paths' :: Int -> [Int] -> Tree -> [[Int]]
+        paths' 1   suffix (Node x []) = [x:suffix]
+        paths' len suffix (Node x cs) = concat . map (paths' (len - 1) (x:suffix)) $ cs
+
+prune :: Int -> Tree -> Tree
+prune mx (Root ns) = Root (map (\(Node v cs) -> (Node v $ prune' cs v)) ns)
+  where prune' :: [Tree] -> Int -> [Tree]
+        prune' ((Node v cs):ns) p | (v `dist` p) <= mx = (Node v (prune' cs v)) : (prune' ns p)
+        prune' (n:ns) p           | otherwise          = prune' ns p
+        prune' [] p                                    = []
+        dist a b = abs (a - b)
+
+mkTree :: [Int] -> Tree
+mkTree xs = Root $ mkTree' xs []
+  where mkTree' (x:xs) hds = (Node x (mkTree' (hds ++ xs) [])) : (mkTree' xs (x:hds))
+        mkTree' [] _ = []
+
 -- Assignment 8.1
 
 -- | Check with quickCheck the permutations of the smooth_perms_fast function
-checkPerms = quickCheck (equalSmoothPerms 4)
+checkPerms = quickCheck (allSmoothPerms 4)
 
 -- | Check with quickCheck the length of the smooth_perms_fast function
 checkLength = quickCheck (lengthSmoothPerms 4)
 
 -- | Check if the new permutation function gives the same result as the given smooth_perms
 allSmoothPerms n p = let sp1 = smooth_perms n p
-                           sp2 = smooth_perms_fast n p
-                       in all (`elem` sp1) sp2 && all (`elem` sp2) sp1
+                         sp2 = smooth_perms_tree n p
+                     in all (`elem` sp1) sp2 && all (`elem` sp2) sp1
 
 -- | Check if the length of the permutations is the same for every element
 lengthSmoothPerms n p = all ((==) (length p) . length) (smooth_perms_fast n p)

@@ -13,7 +13,7 @@ import Afp.As1
 main :: IO ()
 main = newStdGen >>= (\g -> defaultMain $ benchmarks g)
 
-smooth_perms_to_test = [("smooth_perms", smooth_perms, 9), ("smooth_perms_fast", smooth_perms_fast, 18)]
+smooth_perms_to_test = [("smooth_perms", smooth_perms, 9), ("smooth_perms_fast (erroneous)", smooth_perms_fast, 18), ("smooth_perms_tree", smooth_perms_tree, 20)]
 
 benchmarks :: RandomGen g => g -> [Benchmark]
 benchmarks gen = concat $ map mkBench smooth_perms_to_test
