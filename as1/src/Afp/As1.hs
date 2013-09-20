@@ -24,6 +24,7 @@ test =   [count, count 1 2 3, count "" [True, False] id (+)]
 test' :: [Int]
 test' =  [count', count' 1 2 3, count' "" [True, False] id (+)]
 
+
 class Countable b where
   counti :: Int -> b
   counti' :: Int -> b
@@ -91,7 +92,7 @@ checkPerms = quickCheck (equalSmoothPerms 4)
 checkLength = quickCheck (lengthSmoothPerms 4)
 
 -- | Check if the new permutation function gives the same result as the given smooth_perms
-equalSmoothPerms n p = let sp1 = smooth_perms n p
+allSmoothPerms n p = let sp1 = smooth_perms n p
                            sp2 = smooth_perms_fast n p
                        in all (`elem` sp1) sp2 && all (`elem` sp2) sp1
 
