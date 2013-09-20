@@ -11,6 +11,7 @@ import Test.QuickCheck
 -- | The test case from the assignment.
 test ::  [Int]
 test =   [count, count 1 2 3, count "" [True, False] id (+)]
+-- | The test case from the assignment, but with `count'`.
 test' :: [Int]
 test' =  [count', count' 1 2 3, count' "" [True, False] id (+)]
 
@@ -53,6 +54,8 @@ smooth _ _ 			= True
 smooth_perms :: Int -> [Int] -> [[Int]]
 smooth_perms n xs 	= filter (smooth n) (perms xs)
 
+
+-- | Faster smooth_perms version. Returns /WRONG/ results! Please see `smooth_perms_tree` for a correct and fast version.
 smooth_perms_fast :: Int -> [Int] -> [[Int]]
 smooth_perms_fast n = perms 
 	where
@@ -124,8 +127,12 @@ lengthSmoothPerms n p = all ((==) (length p) . length) (smooth_perms_fast n p)
 --
 --
 -- $exc91
--- Theorem 1 forall xs :: [a], ys :: [a] . length (xs ++ ys) == length (xs) + length (ys)
+-- Theorem 1
 -- 
+-- @
+-- forall (xs :: [a]) (ys :: [a]) . length (xs ++ ys) == length (xs) + length (ys)
+-- @
+--
 -- Proof:
 --   Base case, let xs be []
 --   
@@ -156,7 +163,12 @@ lengthSmoothPerms n p = all ((==) (length p) . length) (smooth_perms_fast n p)
 --   @
 -- 
 -- 
--- Theorem 2 forall t :: Tree a . length (flatten t) = size t
+-- Theorem 2
+-- 
+-- @
+-- forall (t :: Tree a) . length (flatten t) = size t
+-- @
+--
 -- Proof:
 --   Base case
 --
@@ -180,10 +192,16 @@ lengthSmoothPerms n p = all ((==) (length p) . length) (smooth_perms_fast n p)
 --   Inductive case, to prove:
 --
 --   @
+--   forall (l :: Tree a) (r :: Tree a) . ( length ( flatten l ) = size l && length ( flatten r) = size r ) -> length ( flatten (Node l r )) = size (Node l r)
+--   @
+--
+--   Assume first part of implication is true:
+--
+--   @
 --     size (Node l r)
 --   = Def. size
 --     size l + size r
---   =
+--   = implication, first part
 --     length ((flatten l) + length (flatten r))
 --   = Theorem 1
 --     length ((flatten l) ++ (flatten r))
