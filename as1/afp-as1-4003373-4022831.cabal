@@ -16,7 +16,7 @@ version:             0.1.0.0
 synopsis:            Assignment 1 of the Advanced Functional Programming Course.
 
 -- A longer description of the package.
--- description:         
+description:         Assignment 1 of the Advanced Functional Programming Course from Philipp Hausmann - 4003373 and Laurens van den Brink - 4022831. Submission date: sept 20, 2013. 
 
 -- The license under which the package is released.
 license:             GPL-3
@@ -29,7 +29,7 @@ author:              Philipp Hausmann, Laurens van den Brink
 
 -- An email address to which users can send suggestions, bug reports, and 
 -- patches.
-maintainer:          p.hausmann@students.uu.nl
+maintainer:          p.hausmann@students.uu.nl, l.vandenbrink1@students.uu.nl
 
 -- A copyright notice.
 -- copyright:           
