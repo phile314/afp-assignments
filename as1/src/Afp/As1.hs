@@ -84,6 +84,12 @@ smooth_perms_fast n = perms
 		
 -- Assignment 8.1
 
+-- | Check with quickCheck the permutations of the smooth_perms_fast function
+checkPerms = quickCheck (equalSmoothPerms 4)
+
+-- | Check with quickCheck the length of the smooth_perms_fast function
+checkLength = quickCheck (lengthSmoothPerms 4)
+
 -- | Check if the new permutation function gives the same result as the given smooth_perms
 equalSmoothPerms n p = let sp1 = smooth_perms n p
                            sp2 = smooth_perms_fast n p
