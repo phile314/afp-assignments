@@ -1,5 +1,8 @@
 module Afp.As1 (
   test, test', count, count', Countable, smooth_perms, smooth_perms_fast, allSmoothPerms, lengthSmoothPerms, smooth_perms_tree,
+  -- * Exercise 8.1
+  -- $exc81
+   
   -- * Exercise 9.1
   -- $exc91
 ) where
@@ -130,9 +133,17 @@ allSmoothPerms n p = let sp1 = smooth_perms_fast n p
 lengthSmoothPerms n p = all ((==) (length p) . length) (smooth_perms_fast n p)
 
 
--- Assignment 9.1
 --
+-- $exc81
 --
+-- Analysis of the heap profiling:
+--
+-- In the tree-case, the build-up of the tree is clearly visible in the graph as the linear increase in memory usage.
+--
+-- In the simple-case, all possible permutations are built which increases memory consumption.
+--
+
+
 -- $exc91
 -- Theorem 1
 -- 

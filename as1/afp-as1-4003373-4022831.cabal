@@ -41,7 +41,7 @@ build-type:          Simple
 -- Constraint on the version of Cabal needed to build this package.
 cabal-version:       >=1.8
 
-extra-source-files:  README.txt, criterion.html
+extra-source-files:  README.txt, criterion.html, heap_simple.ps, heap_fast.ps, heap_tree.ps
 
 
 library
