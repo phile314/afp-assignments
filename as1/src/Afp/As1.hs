@@ -58,6 +58,7 @@ smooth :: (Ord a, Num a) => a -> [a] -> Bool
 smooth n (x:y:ys) 	= abs (y - x) <= n && smooth n (y:ys)
 smooth _ _ 			= True
 
+-- | The original smooth_perms version from the assignment.
 smooth_perms :: Int -> [Int] -> [[Int]]
 smooth_perms n xs 	= filter (smooth n) (perms xs)
 
