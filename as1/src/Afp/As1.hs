@@ -61,8 +61,8 @@ smooth _ _ 			= True
 smooth_perms :: Int -> [Int] -> [[Int]]
 smooth_perms n xs 	= filter (smooth n) (perms xs)
 
-allSmoothPerms :: Int -> [Int] -> [[Int]]
-allSmoothPerms n = perms 
+smooth_perms_fast :: Int -> [Int] -> [[Int]]
+smooth_perms_fast n = perms 
 	where
 		split 			:: [a] -> [(a, [a])]
 		split [] 		= []
