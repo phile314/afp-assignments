@@ -6,17 +6,7 @@ module Afp.As1 (
 
 import Test.QuickCheck
 
--- Assignment 1.1
--- Cabalize everything
--- what should we put in the package name?
-
-
 -- Assignment 2.5
-
--- Should we remove the links??
--- Creating a varargs function in Haskell is explained on http://www.haskell.org/haskellwiki/Varargs
--- There is another, different version on http://okmij.org/ftp/Haskell/polyvariadic.html#polyvar-fn ,
--- but it uses language extensions.
 
 -- | The test case from the assignment.
 test ::  [Int]
@@ -82,33 +72,36 @@ smooth_perms_fast n = perms
 		smooth (w:y:ys) 	= abs (y - w) <= n && smooth (y:ys)
 		smooth _ 			= True
 
+-- | Computes all smooth permutation using a tree representation of the permutations.
+smooth_perms_tree :: Int -> [Int] ->[[Int]]
+smooth_perms_tree _ [] = [[]]
+smooth_perms_tree n xs = (paths $ length xs) . (prune n) . mkTree $ xs
 
 data Tree = Root [Tree]
           | Node Int [Tree] 
   deriving Show
 
-smooth_perms_tree :: Int -> [Int] ->[[Int]]
-smooth_perms_tree _ [] = [[]]
-smooth_perms_tree n xs = (paths $ length xs) . (prune n) . mkTree $ xs
-
+-- | Returns all paths with the given length occuring in the tree.
 paths :: Int -> Tree -> [[Int]]
 paths len (Root ns) = concat $ map (paths' len []) ns
   where paths' :: Int -> [Int] -> Tree -> [[Int]]
         paths' 1   suffix (Node x []) = [x:suffix]
         paths' len suffix (Node x cs) = concat . map (paths' (len - 1) (x:suffix)) $ cs
 
+-- | Removes all subtrees where the smoothness-condition is violated.
 prune :: Int -> Tree -> Tree
 prune mx (Root ns) = Root (map (\(Node v cs) -> (Node v $ prune' cs v)) ns)
   where prune' :: [Tree] -> Int -> [Tree]
         prune' ((Node v cs):ns) p | (v `dist` p) <= mx = (Node v (prune' cs v)) : (prune' ns p)
-        prune' (n:ns) p           | otherwise          = prune' ns p
-        prune' [] p                                    = []
+        prune' (n:ns)           p | otherwise          = prune' ns p
+        prune' []               p                      = []
         dist a b = abs (a - b)
 
+-- | Builds a tree representating all permutations of the given list.
 mkTree :: [Int] -> Tree
 mkTree xs = Root $ mkTree' xs []
   where mkTree' (x:xs) hds = (Node x (mkTree' (hds ++ xs) [])) : (mkTree' xs (x:hds))
-        mkTree' [] _ = []
+        mkTree' []     _   = []
 
 -- Assignment 8.1
 
