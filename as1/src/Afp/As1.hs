@@ -55,27 +55,32 @@ smooth_perms :: Int -> [Int] -> [[Int]]
 smooth_perms n xs 	= filter (smooth n) (perms xs)
 
 
--- | Faster smooth_perms version. Returns /WRONG/ results! Please see `smooth_perms_tree` for a correct and fast version.
+-- | Fast smooth_perms version, but the `smooth_perms_tree` is still much faster.
 smooth_perms_fast :: Int -> [Int] -> [[Int]]
 smooth_perms_fast n = perms 
-	where
-		split 			:: [Int] -> [(Int, [Int])]
-		split []		= []
-		split (x:xs) = foldr (\(y, ys) r -> check (y, x:ys) r) (check (x, xs) []) (split xs)
-		perms :: [Int] -> [[Int]]
-		perms [] 	= [[]]
-		perms xs = foldr (\(v,vs) zs -> foldr (\e r -> checks (v:e) r) zs $ perms vs) [] $ split xs
-		check :: (Int, [Int]) -> [(Int, [Int])] -> [(Int, [Int])]
-		check (y, zs) r | smooth zs = (y, zs) : r
-						| otherwise = r
-		checks :: [Int] -> [[Int]] -> [[Int]]
-		checks zs r | smooth zs = zs : r
-					| otherwise = r
-		smooth 				:: [Int] -> Bool
-		smooth (w:y:ys) 	= abs (y - w) <= n && smooth (y:ys)
-		smooth _ 			= True
+  where
+    split :: [Int] -> [(Int, [Int])]
+    split []     = []
+    split (x:xs) = foldr (\(y, ys) r -> check y (x:ys) r) [(x,xs)] (split xs)
 
--- | Computes all smooth permutation using a tree representation of the permutations.
+    perms :: [Int] -> [[Int]]
+    perms [] = [[]]
+    perms xs = foldr (\(v,vs) zs -> foldr (\e r -> iscorrect (v:e) r) zs $ perms vs) [] $ split xs
+
+    check :: Int -> [Int] -> [(Int, [Int])] -> [(Int, [Int])]
+    check y [] r = (y, []) : r
+    check y zs r | any (\a -> abs (y - a) <= n) zs = (y, zs) : r
+                 | otherwise = r
+
+    iscorrect :: [Int] -> [[Int]] -> [[Int]]
+    iscorrect zs r | smooth zs = zs : r
+                   | otherwise = r
+
+    smooth :: [Int] -> Bool
+    smooth (w:y:ys) = abs (y - w) <= n && smooth (y:ys)
+    smooth _        = True
+
+-- | Another fast `smooth_perms` version. Computes all smooth permutation using a tree representation of the permutations.
 smooth_perms_tree :: Int -> [Int] ->[[Int]]
 smooth_perms_tree _ [] = [[]]
 smooth_perms_tree n xs = (paths $ length xs) . (prune n) . mkTree $ xs
@@ -115,9 +120,11 @@ checkPerms = quickCheck (allSmoothPerms 4)
 checkLength = quickCheck (lengthSmoothPerms 4)
 
 -- | Check if the new permutation function gives the same result as the given smooth_perms
-allSmoothPerms n p = let sp1 = smooth_perms n p
+allSmoothPerms n p = let sp1 = smooth_perms_fast n p
                          sp2 = smooth_perms_tree n p
-                     in all (`elem` sp1) sp2 && all (`elem` sp2) sp1
+                         sp3 = smooth_perms_fast n p
+                     in sp1 `set_eq` sp2 && sp2 `set_eq` sp3
+  where s1 `set_eq` s2 = all (`elem` s1) s2 && all (`elem` s2) s1
 
 -- | Check if the length of the permutations is the same for every element
 lengthSmoothPerms n p = all ((==) (length p) . length) (smooth_perms_fast n p)

@@ -13,6 +13,8 @@ $ cabal build
 -- Running the criterion benchmak --
 cabal bench --benchmark-options="-o bench.html"
 
+-- Running heap benchmark --
+$ cabal configure --enable-executable-profiling
 
 
 -- References --
