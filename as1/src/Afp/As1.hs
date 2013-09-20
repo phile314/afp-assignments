@@ -90,7 +90,7 @@ checkPerms = quickCheck (equalSmoothPerms 4)
 checkLength = quickCheck (lengthSmoothPerms 4)
 
 -- | Check if the new permutation function gives the same result as the given smooth_perms
-equalSmoothPerms n p = all (`elem` (smooth_perms n p)) (c n p)
+equalSmoothPerms n p = all (`elem` (smooth_perms n p)) (smooth_perms_fast n p)
 
 -- | Check if the length of the permutations is the same for every element
 lengthSmoothPerms n p = all ((==) (length p) . length) (smooth_perms_fast n p)
