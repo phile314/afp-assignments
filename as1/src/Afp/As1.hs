@@ -64,18 +64,30 @@ smooth_perms n xs 	= filter (smooth n) (perms xs)
 smooth_perms_fast :: Int -> [Int] -> [[Int]]
 smooth_perms_fast n = perms 
 	where
-		split 			:: [a] -> [(a, [a])]
-		split [] 		= []
-		split (x:xs) 	= (x, xs) : [(y, x:ys) | (y, ys) <- split xs]
+		split 			:: [Int] -> [(Int, [Int])]
+		split []		= []
+		split (x:xs) = foldr (\(y, ys) r -> check (y, x:ys) r) (check (x, xs) []) (split xs)
 		perms :: [Int] -> [[Int]]
-		perms [] = [[]]
-		perms xs = [(v:p) | (v,vs) <- split xs, p <- perms vs, smooth (v:p)]		
+		perms [] 	= [[]]
+		perms xs = foldr (\(v,vs) zs -> foldr (\e r -> checks (v:e) r) zs $ perms vs) [] $ split xs
+		check :: (Int, [Int]) -> [(Int, [Int])] -> [(Int, [Int])]
+		check (y, zs) r | smooth zs = (y, zs) : r
+						| otherwise = r
+		checks :: [Int] -> [[Int]] -> [[Int]]
+		checks zs r | smooth zs = zs : r
+					| otherwise = r
 		smooth 				:: [Int] -> Bool
 		smooth (w:y:ys) 	= abs (y - w) <= n && smooth (y:ys)
 		smooth _ 			= True
 
+		
 -- Assignment 8.1
 
+-- | Check if the new permutation function gives the same result as the given smooth_perms
+equalSmoothPerms n p = all (`elem` (smooth_perms n p)) (smooth_perms_fast n p)
+
+-- | Check if the length of the permutations is the same for every element
+lengthSmoothPerms n p = all ((==) (length p) . length) (smooth_perms_fast n p)
 
 
 -- Assignment 9.1
