@@ -51,24 +51,30 @@ trace = undefined
 
 -- 2.9
 --
---p1, p2, p3 :: Int
-{--
+p1, p2, p3 :: Int
+
 p1 = start store 3 store 5 add stop
 p2 = start store 3 store 6 store 2 mul add stop
 p3 = start store 2 add stop
 
-type Stack = a -> b
-type Cont a b = a -> b
+--data Nat a = Zero | Succ a
 
---start :: Cont a b -> b
-start = id
-stop :: a -> a
-stop = id
-store :: Int -> Cont Int b -> b
-store x cp = cp x
-add :: Int -> Int -> Cont Int b -> b
-add = undefined
-mul :: Int -> Int -> Cont Int b -> b
-mul = undefined
+type Stack = [Int]
 
---}
+type Cont a = Stack -> a -> Stack
+
+
+start :: (Stack -> a -> b) -> a -> b
+start = (\c -> c [])
+stop :: Stack -> Int
+stop [x] = x
+
+store :: Stack -> Int -> ((Stack -> a) -> a)
+store st x = \c -> c (x:st)
+
+add :: Stack -> (Stack -> a) -> a
+add (s1:s2:st) = \c -> c ((s1 + s2):st)
+
+mul :: Stack -> (Stack -> a) -> a
+mul (s1:s2:st) = \c -> c ((s1 * s2):st)
+
