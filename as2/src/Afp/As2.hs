@@ -1,3 +1,4 @@
+{-# LANGUAGE EmptyDataDecls #-}
 module Afp.As2 (
   dummy,
   -- * Exercise 8.1
@@ -51,30 +52,31 @@ trace = undefined
 
 -- 2.9
 --
-p1, p2, p3 :: Int
+p1, p2 :: Int
 
 p1 = start store 3 store 5 add stop
 p2 = start store 3 store 6 store 2 mul add stop
-p3 = start store 2 add stop
+--p3 = start store 2 add stop
 
---data Nat a = Zero | Succ a
+data Zero
+data Succ a
 
-type Stack = [Int]
+--This doesn't work with the "type" keyword.
+data Stack a = St [Int]
 
-type Cont a = Stack -> a -> Stack
+type Cont a b = Stack a -> b
 
+start :: (Stack Zero -> a -> b) -> a -> b
+start = (\c -> c (St []))
+stop :: Stack (Succ Zero) -> Int
+stop (St [x]) = x
 
-start :: (Stack -> a -> b) -> a -> b
-start = (\c -> c [])
-stop :: Stack -> Int
-stop [x] = x
+store :: Stack b -> Int -> Cont (Succ b) a -> a
+store (St ss) x = \c -> c (St (x:ss))
 
-store :: Stack -> Int -> ((Stack -> a) -> a)
-store st x = \c -> c (x:st)
+add :: Stack (Succ (Succ b)) -> Cont (Succ b) a -> a
+add (St (s1:s2:st)) = \c -> c (St ((s1 + s2):st))
 
-add :: Stack -> (Stack -> a) -> a
-add (s1:s2:st) = \c -> c ((s1 + s2):st)
-
-mul :: Stack -> (Stack -> a) -> a
-mul (s1:s2:st) = \c -> c ((s1 * s2):st)
+mul :: Stack (Succ (Succ b)) -> Cont (Succ b) a -> a
+mul (St (s1:s2:st)) = \c -> c (St ((s1 * s2):st))
 
