@@ -1,7 +1,9 @@
 {-# LANGUAGE EmptyDataDecls #-}
 {-# LANGUAGE FlexibleContexts #-}
 module Afp.As2 (
-  extendedBy,
+  extendedBy, calls, trace, fac, fixObject, Object,
+
+  start, stop, store, add, mul,
   -- * Exercise 8.1
   -- $exc81
    
@@ -98,3 +100,90 @@ add (St (s1:s2:st)) = \c -> c (St ((s1 + s2):st))
 mul :: Stack (Succ (Succ b)) -> Cont (Succ b) a -> a
 mul (St (s1:s2:st)) = \c -> c (St ((s1 * s2):st))
 
+
+
+-- 4.1
+--
+data F a = F { unF :: F a -> a }
+
+
+--yy = \f -> (\x -> f (x x)) (\x -> f (x x))
+
+
+-- 4.2
+--
+
+-- Matrices are specified in row-major order.
+-- TODO: somebody should check the definitions
+
+type Square a    = Square' Nil a
+data Square' t a = Zero (t (t a)) | Succ (Square' (Cons t) a)
+data Nil a       = Nil
+data Cons t a    = Cons a (t a)
+
+{--
+Succ (
+    Succ (
+        Zero (
+            Cons (
+                Cons 1 (
+                    Cons 0 Nil
+                )
+            )
+            (
+                Cons (
+                    Cons 0 (
+                        Cons 1 Nil
+                    )
+                    
+                )
+                Nil
+            )
+        )
+    )
+)
+--}
+
+eye2 = Succ (Succ (Zero (Cons (Cons 1 (Cons 0 Nil))(Cons (Cons 0 (Cons 1 Nil))Nil))))
+
+
+{--
+Succ (
+    Succ (
+        Succ (
+            Zero (
+                Cons (
+                    Cons 1 (
+                        Cons 2 (
+                            Cons 3 Nil
+                        )
+                    )
+                )
+                (
+                    Cons (
+                        Cons 4 (
+                            Cons 5 (
+                                Cons 6 Nil
+                            )
+                        )
+                    
+                    )
+                    (
+                        Cons (
+                            Cons 7 (
+                                Cons 8 (
+                                    Cons 9 Nil
+                                )
+                            )
+                        )
+                        Nil
+                    )
+                )
+            )
+        )
+    )
+)
+--}
+
+
+m2 = Succ (Succ (Succ (Zero (Cons (Cons 1 (Cons 2 (Cons 3 Nil)))(Cons (Cons 4 (Cons 5 (Cons 6 Nil)))(Cons (Cons 7 (Cons 8 (Cons 9 Nil)))Nil))))))
