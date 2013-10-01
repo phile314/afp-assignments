@@ -104,10 +104,13 @@ mul (St (s1:s2:st)) = \c -> c (St ((s1 * s2):st))
 
 -- 4.1
 --
+
+-- data F a = F { unF :: F a -> a }
+--y = \f -> (\x -> f (x x)) (\x -> f (x x))
+
 data F a = F { unF :: F a -> a }
 
-
---yy = \f -> (\x -> f (x x)) (\x -> f (x x))
+y' = \f -> (\x -> f ((unF x) x)) (F (\x -> f ((unF x) x)))
 
 
 -- 4.2
