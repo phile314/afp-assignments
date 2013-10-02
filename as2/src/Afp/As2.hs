@@ -101,6 +101,29 @@ mul :: Stack (Succ (Succ b)) -> Cont (Succ b) a -> a
 mul (St (s1:s2:st)) = \c -> c (St ((s1 * s2):st))
 
 
+-- 3
+--
+data StateMonadPlus s a = StM (s -> (a, s))
+
+instance Monad (StateMonadPlus s) where  
+    return x = StM $ \s -> (x,s)  
+    (StM h) >>= f = StM $ \s -> 
+        let (a, newState) = h s  
+        in  let (StM g) = f a
+			in g newState  
+
+diagnostics :: StateMonadPlus s String
+diagnostics = undefined
+
+
+annotate :: String -> StateMonadPlus s a -> StateMonadPlus s a
+annotate = undefined
+
+m :: StateMonadPlus Int String
+m = 
+	do 	return 3 >> return 4
+		return 5
+		diagnostics
 
 -- 4.1
 --
