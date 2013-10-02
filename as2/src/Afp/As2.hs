@@ -1,5 +1,9 @@
-{-# LANGUAGE EmptyDataDecls #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE NoMonomorphismRestriction #-}
+
 module Afp.As2 (
   extendedBy, calls, trace, fac, fixObject, Object,
 
@@ -74,7 +78,7 @@ p1, p2 :: Int
 
 p1 = start store 3 store 5 add stop
 p2 = start store 3 store 6 store 2 mul add stop
-p3 = start store 2 add stop
+-- p3 = start store 2 add stop
 
 
 -- Solution Task 2.9
@@ -109,21 +113,21 @@ data Entry = Entry (String, Int)
 instance Show Entry where
 	show (Entry (s, i)) = s ++ "=" ++ show i
 
-data StateMonadPlus s a = St (State (MyState, s) a)
+data StateMonadPlus s a = SMP (State (MyState, s) a)
 
 instance Monad (StateMonadPlus s) where  
-    return x = St (state $ \(m,s) -> (x, (addReturn m,s)))
-    (St x) >>= y  = St $ state $ \(m, s) -> 
+    return x = SMP (state $ \(m,s) -> (x, (addReturn m,s)))
+    (SMP x) >>= y  = SMP $ state $ \(m, s) -> 
 		let (a, (m', s')) = runState x (m, s)
-        in (\(St t) -> runState t (addBind m', s')) (y a)
+        in (\(SMP t) -> runState t (addBind m', s')) (y a)
 
 instance MonadState s (StateMonadPlus s) where
-    get   = St $ state $ \(m,s) -> (s, (addGet m,s))
-    put s = St $ state $ \(m,_) -> ((), (addPut m,s))
+    get   = SMP $ state $ \(m,s) -> (s, (addGet m,s))
+    put s = SMP $ state $ \(m,_) -> ((), (addPut m,s))
 
 
 evalStatePlus :: StateMonadPlus s a -> (MyState, s) -> a
-evalStatePlus (St act) = fst . runState act
+evalStatePlus (SMP act) = fst . runState act
 
 addReturn :: MyState -> MyState
 addReturn = update "return"
@@ -154,10 +158,10 @@ update a (Entry (k,v):xs) 	| k == a 	= Entry (k, v+1) : xs
 							| otherwise = Entry (k,v) : update a xs
 
 diagnostics :: StateMonadPlus s String
-diagnostics = St $ state $ \(m,s) -> ((show $ addDiagnostics m), (addDiagnostics m,s))
+diagnostics = SMP $ state $ \(m,s) -> ((show $ addDiagnostics m), (addDiagnostics m,s))
 
 annotate :: String -> StateMonadPlus s a -> StateMonadPlus s a
-annotate a (St x) = St $ state $ \(m,s) -> runState x (addAnnotate a m, s)
+annotate a (SMP x) = SMP $ state $ \(m,s) -> runState x (addAnnotate a m, s)
 
 monadDiagnostics :: StateMonadPlus Int String
 monadDiagnostics = 
@@ -177,6 +181,26 @@ startStatePlus = ([], 0)
 testDiagnostics = print $ evalStatePlus monadDiagnostics startStatePlus
 testAnnotate = print $ evalStatePlus monadAnnotate startStatePlus
 
+
+class MonadState s m => StoreState s m | m -> s where
+	saveState :: m ()
+	loadState :: m ()
+
+fail :: (Monad m) => String -> m a
+fail = error
+
+runStateMonadPlus :: StateMonadPlus s a -> s -> Either String (a, s)
+runStateMonadPlus = undefined
+
+test = 
+	do	i1 <- get; saveState
+		modify (*2)
+		i2 <- get; saveState
+		modify (*2); saveState
+		i3 <- get; loadState
+		i4 <- get; loadState
+		i5 <- get
+		return (i1,i2,i3,i4,i5)
 
 -- 4.1
 --
