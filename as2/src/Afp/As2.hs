@@ -74,7 +74,7 @@ p1, p2 :: Int
 
 p1 = start store 3 store 5 add stop
 p2 = start store 3 store 6 store 2 mul add stop
---p3 = start store 2 add stop
+p3 = start store 2 add stop
 
 
 -- Solution Task 2.9
@@ -103,27 +103,80 @@ mul (St (s1:s2:st)) = \c -> c (St ((s1 * s2):st))
 
 -- 3
 --
-data StateMonadPlus s a = StM (s -> (a, s))
+type MyState = [Entry]
+data Entry = Entry (String, Int)
+
+instance Show Entry where
+	show (Entry (s, i)) = s ++ "=" ++ show i
+
+data StateMonadPlus s a = St (State (MyState, s) a)
 
 instance Monad (StateMonadPlus s) where  
-    return x = StM $ \s -> (x,s)  
-    (StM h) >>= f = StM $ \s -> 
-        let (a, newState) = h s  
-        in  let (StM g) = f a
-			in g newState  
+    return x = St (state $ \(m,s) -> (x, (addReturn m,s)))
+    (St x) >>= y  = St $ state $ \(m, s) -> 
+		let (a, (m', s')) = runState x (m, s)
+        in (\(St t) -> runState t (addBind m', s')) (y a)
+
+instance MonadState s (StateMonadPlus s) where
+    get   = St $ state $ \(m,s) -> (s, (addGet m,s))
+    put s = St $ state $ \(m,_) -> ((), (addPut m,s))
+
+
+evalStatePlus :: StateMonadPlus s a -> (MyState, s) -> a
+evalStatePlus (St act) = fst . runState act
+
+addReturn :: MyState -> MyState
+addReturn = update "return"
+
+addPut :: MyState -> MyState
+addPut = update "put"
+
+addGet :: MyState -> MyState
+addGet = update "get"
+
+addBind :: MyState -> MyState
+addBind = update "bind" 
+
+addDiagnostics :: MyState -> MyState
+addDiagnostics = update "diagnostics"
+
+addAnnotate :: String -> MyState -> MyState
+addAnnotate = update False
+	where
+		update _ a [] = [Entry ("annotate", 1), Entry (a, 1)]
+		update b a (Entry (s, i):xs)| s == "annotate" 	= Entry (s, i+1) : (if b then xs else update True a xs)
+									| s == a 			= Entry (s, i+1) : (if b then xs else update True a xs)
+									| otherwise			= Entry (s, i) : update b a xs
+
+update :: String -> MyState -> MyState
+update a [] 							= [Entry (a, 1)]
+update a (Entry (k,v):xs) 	| k == a 	= Entry (k, v+1) : xs
+							| otherwise = Entry (k,v) : update a xs
 
 diagnostics :: StateMonadPlus s String
-diagnostics = undefined
-
+diagnostics = St $ state $ \(m,s) -> ((show $ addDiagnostics m), (addDiagnostics m,s))
 
 annotate :: String -> StateMonadPlus s a -> StateMonadPlus s a
-annotate = undefined
+annotate a (St x) = St $ state $ \(m,s) -> runState x (addAnnotate a m, s)
 
-m :: StateMonadPlus Int String
-m = 
+monadDiagnostics :: StateMonadPlus Int String
+monadDiagnostics = 
 	do 	return 3 >> return 4
 		return 5
 		diagnostics
+
+monadAnnotate :: StateMonadPlus Int String
+monadAnnotate =
+	do	annotate "A" (return 3 >> return 4)
+		return 5
+		diagnostics
+
+startStatePlus :: (MyState, Int)
+startStatePlus = ([], 0)
+
+testDiagnostics = print $ evalStatePlus monadDiagnostics startStatePlus
+testAnnotate = print $ evalStatePlus monadAnnotate startStatePlus
+
 
 -- 4.1
 --
