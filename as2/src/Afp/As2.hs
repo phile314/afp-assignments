@@ -5,14 +5,18 @@
 {-# LANGUAGE NoMonomorphismRestriction #-}
 
 module Afp.As2 (
+  -- * Task 2.7
   extendedBy, calls, trace, fac, fixObject, Object,
 
-  start, stop, store, add, mul,
-  -- * Exercise 8.1
-  -- $exc81
-   
-  -- * Exercise 9.1
-  -- $exc91
+  -- * Task 2.9
+  start, stop, store, add, mul, nop,
+
+  -- * Task 4.1
+  y',
+
+  -- * Task 4.2
+  eye2,
+  m2
 ) where
 
 import Test.QuickCheck
@@ -23,6 +27,8 @@ import Control.Monad.State
 
 -- 2.7
 --
+
+-- Definitions from the assignment
 
 type Object a = a -> a -> a
 data X = X { n :: Int, f :: Int -> Int }
@@ -57,13 +63,11 @@ data Step a b = Enter a
   deriving Show
 
 
--- Solution Task 2.7.1
-
+-- | Task 2.7.1. The identity object. 
 zero :: Object a
 zero super this = super
 
--- Solution Task 2.7.2
-
+-- | Task 2.7.2. Traces all calls to functions of the super object.
 trace :: MonadWriter [Step a b] m => Object (a -> m b)
 trace super this arg = do
   tell [Enter arg]
@@ -81,30 +85,47 @@ p2 = start store 3 store 6 store 2 mul add stop
 -- p3 = start store 2 add stop
 
 
--- Solution Task 2.9
-data Zero
-data Succ a
+
+-- We could use given empty data decls here, but haddock fails for some reason if we use them.
+-- | Type-level zero.
+data Zero = Zero'
+-- | Type-level successor.
+data Succ a = Succ'
 
 --This doesn't work with the "type" keyword.
+-- | The stack. The size of the stack is given as phantom type. The use of a phantom types
+-- makes the code more readable, at the cost of allowing "wrong" functions to be defined.
+-- E.g. the type of the first argument of `add` could be changed to (Stack (Succ b)),
+-- without producing any compile time error but introducing the risk of a runtime
+-- error. Therefor, it is advised to NOT define any "wrongly" typed functions.
+-- Defining a list which contains a type-level counter could solve this problem.
 data Stack a = St [Int]
 
+-- | A continuation.
 type Cont a b = Stack a -> b
 
+-- | Marks the start of a program.
 start :: (Stack Zero -> a -> b) -> a -> b
 start = (\c -> c (St []))
+-- | Marks the end of a program and returns the top stack element. Enforces that the stack only has one element.
 stop :: Stack (Succ Zero) -> Int
 stop (St [x]) = x
 
+-- | Stores the given value on the stack.
 store :: Stack b -> Int -> Cont (Succ b) a -> a
 store (St ss) x = \c -> c (St (x:ss))
 
+-- | Pops and adds the top two stack elements and pushes the result onto the stack.
 add :: Stack (Succ (Succ b)) -> Cont (Succ b) a -> a
 add (St (s1:s2:st)) = \c -> c (St ((s1 + s2):st))
 
+-- | Pops and multiplies the top two stack elements and pushes the result onto the stack.
 mul :: Stack (Succ (Succ b)) -> Cont (Succ b) a -> a
 mul (St (s1:s2:st)) = \c -> c (St ((s1 * s2):st))
 
-
+-- | Does nothing.
+nop :: Stack a -> Cont a b -> b
+nop s = \c -> c s
 -- 3
 --
 type MyState = [Entry]
@@ -246,7 +267,7 @@ Succ (
     )
 )
 --}
-
+-- | Task 4.2.1. The 2-dimensional identity matrix.
 eye2 = Succ (Succ (Zero (Cons (Cons 1 (Cons 0 Nil))(Cons (Cons 0 (Cons 1 Nil))Nil))))
 
 
@@ -288,5 +309,5 @@ Succ (
 )
 --}
 
-
+-- | Task 4.2.2.
 m2 = Succ (Succ (Succ (Zero (Cons (Cons 1 (Cons 2 (Cons 3 Nil)))(Cons (Cons 4 (Cons 5 (Cons 6 Nil)))(Cons (Cons 7 (Cons 8 (Cons 9 Nil)))Nil))))))
