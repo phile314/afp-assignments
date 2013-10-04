@@ -100,7 +100,7 @@ data Succ1 a = Succ1'
 -- allows the use of a standard list, at the cost of allowing wrong functions to be defined.
 -- E.g. the type of the first argument of `add` could be changed to (Stack (Succ b)),
 -- without producing any compile time errors but introducing the risk of runtime
--- errors. Therefor, it is NOT advised to define any wrongly typed functions.
+-- errors. Therefor, it is NOT advised to define any \"wrongly\" typed functions.
 -- Defining a list which contains a type-level counter and enforces that it contains the right number of elements would solve this problem.
 data Stack a = St [Int]
 
