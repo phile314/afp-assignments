@@ -6,20 +6,23 @@
 
 module Afp.As2 (
   -- * Task 2.7
-  extendedBy, calls, trace, fac, fixObject, Object,
+  extendedBy, calls, fac, fixObject, Object,
+  Step, zero, trace,
 
   -- * Task 2.9
   start, stop, store, add, mul, nop,
+  Stack, Cont, Zero1, Succ1,
 
   -- * Task 4.1
   y',
 
-  -- * Task 4.2
+  -- * Task 4.2i
   eye2,
-  m2
+  m2,
+  Nil,
+  Square'
 ) where
 
-import Test.QuickCheck
 import Control.Monad
 import Control.Monad.Writer
 import Control.Monad.State
@@ -88,39 +91,39 @@ p2 = start store 3 store 6 store 2 mul add stop
 
 -- We could use given empty data decls here, but haddock fails for some reason if we use them.
 -- | Type-level zero.
-data Zero = Zero'
+data Zero1 = Zero1'
 -- | Type-level successor.
-data Succ a = Succ'
+data Succ1 a = Succ1'
 
 --This doesn't work with the "type" keyword.
--- | The stack. The size of the stack is given as phantom type. The use of a phantom types
--- makes the code more readable, at the cost of allowing "wrong" functions to be defined.
+-- | The stack. The size of the stack is given as a phantom type. The use of a phantom type
+-- allows the use of a standard list, at the cost of allowing wrong functions to be defined.
 -- E.g. the type of the first argument of `add` could be changed to (Stack (Succ b)),
--- without producing any compile time error but introducing the risk of a runtime
--- error. Therefor, it is advised to NOT define any "wrongly" typed functions.
--- Defining a list which contains a type-level counter could solve this problem.
+-- without producing any compile time errors but introducing the risk of runtime
+-- errors. Therefor, it is NOT advised to define any wrongly typed functions.
+-- Defining a list which contains a type-level counter and enforces that it contains the right number of elements would solve this problem.
 data Stack a = St [Int]
 
 -- | A continuation.
 type Cont a b = Stack a -> b
 
 -- | Marks the start of a program.
-start :: (Stack Zero -> a -> b) -> a -> b
+start :: (Stack Zero1 -> a -> b) -> a -> b
 start = (\c -> c (St []))
 -- | Marks the end of a program and returns the top stack element. Enforces that the stack only has one element.
-stop :: Stack (Succ Zero) -> Int
+stop :: Stack (Succ1 Zero1) -> Int
 stop (St [x]) = x
 
 -- | Stores the given value on the stack.
-store :: Stack b -> Int -> Cont (Succ b) a -> a
+store :: Stack b -> Int -> Cont (Succ1 b) a -> a
 store (St ss) x = \c -> c (St (x:ss))
 
 -- | Pops and adds the top two stack elements and pushes the result onto the stack.
-add :: Stack (Succ (Succ b)) -> Cont (Succ b) a -> a
+add :: Stack (Succ1 (Succ1 b)) -> Cont (Succ1 b) a -> a
 add (St (s1:s2:st)) = \c -> c (St ((s1 + s2):st))
 
 -- | Pops and multiplies the top two stack elements and pushes the result onto the stack.
-mul :: Stack (Succ (Succ b)) -> Cont (Succ b) a -> a
+mul :: Stack (Succ1 (Succ1 b)) -> Cont (Succ1 b) a -> a
 mul (St (s1:s2:st)) = \c -> c (St ((s1 * s2):st))
 
 -- | Does nothing.
@@ -231,6 +234,7 @@ test =
 
 data F a = F { unF :: F a -> a }
 
+-- | Works with ghci, but ghc 7.4.2 doesn't terminate when compiling this code for some reason. 
 y' = \f -> (\x -> f ((unF x) x)) (F (\x -> f ((unF x) x)))
 
 
@@ -309,5 +313,5 @@ Succ (
 )
 --}
 
--- | Task 4.2.2.
+-- | Task 4.2.2. (Row-major order)
 m2 = Succ (Succ (Succ (Zero (Cons (Cons 1 (Cons 2 (Cons 3 Nil)))(Cons (Cons 4 (Cons 5 (Cons 6 Nil)))(Cons (Cons 7 (Cons 8 (Cons 9 Nil)))Nil))))))
