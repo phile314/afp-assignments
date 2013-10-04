@@ -16,7 +16,7 @@ module Afp.As2 (
   -- * Task 4.1
   y',
 
-  -- * Task 4.2i
+  -- * Task 4.2
   eye2,
   m2,
   Nil,
@@ -242,8 +242,6 @@ y' = \f -> (\x -> f ((unF x) x)) (F (\x -> f ((unF x) x)))
 --
 
 -- Matrices are specified in row-major order.
--- TODO: somebody should check the definitions
-
 type Square a    = Square' Nil a
 data Square' t a = Zero (t (t a)) | Succ (Square' (Cons t) a)
 data Nil a       = Nil
