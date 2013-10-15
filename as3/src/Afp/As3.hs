@@ -8,6 +8,9 @@ module Afp.As3
 
 where
 
+import Control.Monad.Reader
+import System.Random
+
 -- 4.3 (25%)
 --
 type Square = Square' Nil
@@ -63,7 +66,7 @@ mapNil fA Nil = Nil
 mapCons :: (forall b . (b -> d) -> (t b -> t d)) -> (a -> d) -> (Cons t a -> Cons t d)
 mapCons fT fA (Cons x xs) = Cons (fA x) (fT fA xs)
 
--- ATTENTION: b and d have to be in the first forall quantifier
+-- ATTENTION: b and d have to be in the forall quantifier
 mapSquare' :: (forall b d . (b -> d) -> (t b -> t d)) -> (a -> d) -> (Square' t a -> Square' t d)
 mapSquare' fT fA (Zero xs) = Zero $ fT (fT fA) xs
 mapSquare' fT fA (Succ xs) = Succ $ mapSquare' (mapCons fT) fA xs
@@ -79,6 +82,19 @@ instance Functor Square where
 
 -- 5.3 (15%)
 --
+one :: Int
+one = 1
+two :: Int
+two = 2
+randomN :: (RandomGen g) => Int -> g -> Int
+randomN n g = (fst (next g) `mod` (two * n + one)) - n
+{--sizedInt :: 
+sizedInt = do
+  n <- ask
+  g <- lift ask
+  return (randomN n g)
+--}
+
 
 -- 6.1 (25%)
 -- laurens
