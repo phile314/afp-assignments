@@ -1,6 +1,8 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE GADTs #-}
 
 module Afp.As3
 
@@ -80,6 +82,54 @@ instance Functor Square where
 
 -- 6.1 (25%)
 -- laurens
+data Contract :: * -> * where
+	Pred :: (a -> Bool) -> Contract a
+	Fun :: Contract a -> Contract b -> Contract (a -> b)
+	DFun :: Contract a -> (a -> Contract b) -> Contract (a -> b)
+	List :: Contract a -> Contract [a]
+
+assert :: Contract a -> a -> a
+assert (Pred p) 	x 	 = if p x then x else error "contract violation"
+assert (Fun pre post) f  = assert post . f . assert pre
+assert (DFun pre post) f = \x -> assert (post x) (f $ assert pre x) 
+assert (List c) xs 		 = map (assert c) xs
+
+pos :: (Num a, Ord a) => Contract a
+pos = Pred (>0)
+
+test1 = assert pos 2 -- == 2
+test2 = assert pos 0 -- == error
+
+true :: Contract a 
+true = Pred (const True)
+
+(-->) :: Contract a -> Contract b -> Contract (a -> b)
+x --> y = DFun x (const y)
+
+(!!) :: Contract ([a] -> Int -> a)
+(!!) = DFun true (\xs -> DFun (Pred (check xs)) (\n -> Pred (\x -> True)))
+	where 
+		check :: [a] -> Int -> Bool
+		check (x:_)	 0 = True
+		check [] 	 _ = False
+		check (_:xs) n = check xs (n - 1)
+
+
+preserves :: Eq b => (a -> b) -> Contract (a -> a)
+preserves f = DFun true (preserve f)
+	where
+		preserve :: Eq b => (a -> b) -> a -> Contract a
+		preserve f = (\l -> Pred ((==) l . f)) . f 
+
+test3 = assert (preserves length) reverse "Hello" 			-- "olleH"
+test4 = assert (preserves length) (take 5) "Hello"	 		-- "Hello"
+test5 = assert (preserves length) (take 5) "Hello world" 	-- bottom
+
+preservesPos = preserves (>0)
+preservesPos' = pos --> pos
+
+allPos = List pos
+allPos' = Pred (all (>0))
 
 -- 8.4 (10%)
 -- ph; finished - unchecked
