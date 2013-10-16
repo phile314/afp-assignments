@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module Afp.As3
 
@@ -81,19 +82,19 @@ instance Functor Square where
 -- ph
 
 -- 5.3 (15%)
---
+-- ??
 one :: Int
 one = 1
 two :: Int
 two = 2
 randomN :: (RandomGen g) => Int -> g -> Int
 randomN n g = (fst (next g) `mod` (two * n + one)) - n
-{--sizedInt :: 
+{-sizedInt :: MonadReader Int m => m Int
 sizedInt = do
   n <- ask
   g <- lift ask
   return (randomN n g)
---}
+-}
 
 
 -- 6.1 (25%)
