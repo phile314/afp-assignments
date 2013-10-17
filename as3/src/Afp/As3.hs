@@ -20,6 +20,7 @@ module Afp.As3
     preserves, Contract (..),
 
     -- * Task 8.4
+    -- $exc84
     forceBoolList,
 
     -- * Task 8.5
@@ -195,19 +196,23 @@ test11 = assert allPos' [1,2,-4,5] 			-- = error violation
 -}
 
 -- 8.4 (10%)
--- ph; finished - unchecked
+-- ph; UNCHECKED
 
-forceBoolList :: [Bool] -> r -> r
-forceBoolList (True:xs) r = forceBoolList xs r
-forceBoolList (False:xs)r = forceBoolList xs r
-forceBoolList []        r = r
-
--- if the type were specified as [Bool] -> [Bool], evaluation would not be forced until the actual
+-- $exc84
+-- 
+-- If the type of forceBoolList were specified as [Bool] -> [Bool], evaluation would not be forced until the actual
 -- return value of forceBoolList were pattern matched on.
 -- With the actual type in use here, a dependency between the first and second argument is created.
 -- As soon as the return value of the function is pattern matched on,
 -- evaluation of the first argument is enforced.
 -- Exactly the same reasoning applies for `seq`.
+
+-- | Evaluates the first argument to full normal form as soon as the return value is used.
+forceBoolList :: [Bool] -> r -> r
+forceBoolList (True:xs) r = forceBoolList xs r
+forceBoolList (False:xs)r = forceBoolList xs r
+forceBoolList []        r = r
+
 
 
 -- 8.5 (10%)
