@@ -41,18 +41,25 @@ eye2 = Succ (Succ (Zero (Cons (Cons 1 (Cons 0 Nil))(Cons (Cons 0 (Cons 1 Nil))Ni
 m2 = Succ (Succ (Succ (Zero (Cons (Cons 1 (Cons 2 (Cons 3 Nil)))(Cons (Cons 4 (Cons 5 (Cons 6 Nil)))(Cons (Cons 7 (Cons 8 (Cons 9 Nil)))Nil))))))
 
 
+eqNil :: (a -> a -> Bool) -> (Nil a -> Nil a -> Bool)
+eqNil eqA Nil Nil = True
+
 -- 4.3.1
 -- A type with a (forall) on the inside requires the extension RankNTypes to be enabled.
 -- Try to understand what the difference is between a function of the type of eqCons
 -- and a function with the same type but the (forall) omitted. Can you omit
 -- the (forall) in the case of eqCons and does the function still work?
-eqNil :: (a -> a -> Bool) -> (Nil a -> Nil a -> Bool)
-eqNil eqA Nil Nil = True
 
 -- | 4.3.1 If the forall quantifier is omitted, an implicited forall quantifier outside the whole type expression is placed. The
 --   type would loke something like this:
+--
+--   @
 --   forall a b . (((b -> b -> Bool) -> (t b -> t b -> Bool)) -> (a -> a -> Bool) -> (Cons t a -> Cons t a -> Bool))
---   TODO what's the problem? oo
+--   @
+--
+--   If the function is then called, the type variable b can only be instantiated with exactly one type,
+--   but the passed lambda will be called on values of different types, therefor the type variable
+--   would need to be instantiated with multiple types, which is not possible. Hence it can't work without the forall quantifier.
 eqCons :: (forall b . (b -> b -> Bool) -> (t b -> t b -> Bool)) -> (a -> a -> Bool) -> (Cons t a -> Cons t a -> Bool)
 eqCons eqT eqA (Cons x xs) (Cons y ys) = eqA x y && eqT eqA xs ys
 
@@ -61,7 +68,7 @@ eqCons eqT eqA (Cons x xs) (Cons y ys) = eqA x y && eqT eqA xs ys
 -- Again, try removing the (forall) from the type of eqSquare'.
 -- Does the function still typecheck? Try to explain!
 
--- | 4.3.2 TODO doesn't work without forall, but why?
+-- | 4.3.2 TODO doesn't work without forall, but why? should be the same story as in 431
 eqSquare' :: (forall b . (b -> b -> Bool) -> (t b -> t b -> Bool)) -> (a -> a -> Bool) -> (Square' t a -> Square' t a -> Bool)
 eqSquare' eqT eqA (Zero xs) (Zero ys) = eqT (eqT eqA) xs ys
 eqSquare' eqT eqA (Succ xs) (Succ ys) = eqSquare' (eqCons eqT) eqA xs ys
@@ -85,7 +92,7 @@ mapNil fA Nil = Nil
 mapCons :: (forall b . (b -> d) -> (t b -> t d)) -> (a -> d) -> (Cons t a -> Cons t d)
 mapCons fT fA (Cons x xs) = Cons (fA x) (fT fA xs)
 
--- ATTENTION: b and d have to be in the forall quantifier
+-- b and d have to be in the forall quantifier
 mapSquare' :: (forall b d . (b -> d) -> (t b -> t d)) -> (a -> d) -> (Square' t a -> Square' t d)
 mapSquare' fT fA (Zero xs) = Zero $ fT (fT fA) xs
 mapSquare' fT fA (Succ xs) = Succ $ mapSquare' (mapCons fT) fA xs
