@@ -7,7 +7,23 @@
 {-# LANGUAGE MultiParamTypeClasses  #-}
 
 module Afp.As3
+  ( -- * Task 4.3
+    Square, Square', Nil, eye2, m2, eqNil, eqCons, eqSquare', eqSquare, mapSquare,
 
+    -- * Task 5.2
+    -- $exc52
+
+    -- * Task 5.3
+    one, two, randomN, sizedInt,
+
+    -- * Task 6.1
+    preserves, Contract (..),
+
+    -- * Task 8.4
+    forceBoolList,
+
+    -- * Task 8.5
+    T, T2, T4, T8, T16, f0, f1, f2, f3, f4)
 where
 
 import Control.Monad.Reader
@@ -73,6 +89,7 @@ mapSquare' :: (forall b d . (b -> d) -> (t b -> t d)) -> (a -> d) -> (Square' t 
 mapSquare' fT fA (Zero xs) = Zero $ fT (fT fA) xs
 mapSquare' fT fA (Succ xs) = Succ $ mapSquare' (mapCons fT) fA xs
 
+-- | Maps the given function over a `Square`.
 mapSquare :: (a -> d) -> Square a -> Square d
 mapSquare = mapSquare' mapNil
 
@@ -83,14 +100,14 @@ instance Functor Square where
 -- ph
 
 -- 5.3 (15%)
--- ??
 one :: Int
 one = 1
 two :: Int
 two = 2
 randomN :: (RandomGen g) => Int -> g -> Int
 randomN n g = (fst (next g) `mod` (two * n + one)) - n
--- This is the most general type.
+-- | This is the most general type.
+--   TODO evidence translation!!!
 sizedInt :: (Monad m, MonadTrans t, MonadReader Int (t m), RandomGen g, MonadReader g m) => t m Int
 sizedInt = do
   n <- ask
@@ -217,4 +234,16 @@ f4   = f3 . f3
 {-	For each the types will grow exponential. If you write out the types you will get f1 :: a -> T (T a) and f2 :: a -> T (T (T (T a))). The function f5 will have 32 T's. When that function is uncommented the compiler wouldn't complete any more in a reasonable time.
 -}
 
-
+-- $exc52
+--
+-- @
+-- cls (A a) => B a
+-- ----------------
+-- B a ||- A a           inst A a => A ( Maybe a)    inst A   a         => A ( Maybe a)
+-- ----------------------------------------------    --------------------------------------------- [a <- (Maybe a)]
+-- B a   ||- A ( Maybe a)                            inst A ( Maybe a ) => A ( Maybe ( Maybe a ) )
+-- -----------------------------------------------------------------------------------------------
+-- B a   ||- A ( Maybe ( Maybe a))
+-- --------------------------------- [a <- Int]
+-- B Int ||- A ( Maybe ( Maybe Int))
+-- @
