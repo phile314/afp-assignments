@@ -4,6 +4,7 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
 
 module Afp.As3
 
@@ -89,12 +90,14 @@ two :: Int
 two = 2
 randomN :: (RandomGen g) => Int -> g -> Int
 randomN n g = (fst (next g) `mod` (two * n + one)) - n
-{-sizedInt :: MonadReader Int m => m Int
+-- This is the most general type.
+sizedInt :: (Monad m, MonadTrans t, MonadReader Int (t m), RandomGen g, MonadReader g m) => t m Int
 sizedInt = do
   n <- ask
   g <- lift ask
   return (randomN n g)
--}
+
+-- TODO 5.3 evidence translation
 
 
 -- 6.1 (25%)
