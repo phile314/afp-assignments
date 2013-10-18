@@ -105,8 +105,34 @@ instance Functor Square where
   fmap = mapSquare
 
 -- 5.2 (15%)
--- ph
-
+-- 
+-- $exc52
+--
+-- @
+-- cls (A a) => B a
+-- ----------------
+-- B a ||- A a           inst A a => A ( Maybe a)    inst A   a         => A ( Maybe a)
+-- ----------------------------------------------    --------------------------------------------- [a <- (Maybe a)]
+-- B a   ||- A ( Maybe a)                            inst A ( Maybe a ) => A ( Maybe ( Maybe a ) )
+-- -----------------------------------------------------------------------------------------------
+-- B a   ||- A ( Maybe ( Maybe a))
+-- --------------------------------- [a <- Int]	
+-- B Int ||- A ( Maybe ( Maybe Int))
+-- @
+--
+--
+-- @
+-- Ø			class A a
+-- ------------------------
+-- Ø ||- class A a		inst A a => A (Maybe a)			class A a		(A a) => B a
+-- -------------------------------------------- 		----------------------------
+-- Ø ||- A a => A (Maybe a)								inst (A a, B a) => A [a]
+-- ---------------------------------------------------------------------------------[a <- (Maybe a)]
+-- Ø ||-  A (Maybe [a]) 																			inst A Bool
+-- ------------------------------------------------------------------------------------------------------------- [a <- Bool]
+-- Ø ||- A (Maybe [Bool]) 
+-- @
+--
 -- 5.3 (15%)
 one :: Int
 one = 1
@@ -290,22 +316,3 @@ f4   = f3 . f3
 {-	For each the types will grow exponential. If you write out the types you will get f1 :: a -> T (T a) and f2 :: a -> T (T (T (T a))). The function f5 will have 32 T's. When that function is uncommented the compiler wouldn't complete any more in a reasonable time.
 -}
 
--- $exc52
---
--- @
--- cls (A a) => B a
--- ----------------
--- B a ||- A a           inst A a => A ( Maybe a)    inst A   a         => A ( Maybe a)
--- ----------------------------------------------    --------------------------------------------- [a <- (Maybe a)]
--- B a   ||- A ( Maybe a)                            inst A ( Maybe a ) => A ( Maybe ( Maybe a ) )
--- -----------------------------------------------------------------------------------------------
--- B a   ||- A ( Maybe ( Maybe a))
--- --------------------------------- [a <- Int]
--- B Int ||- A ( Maybe ( Maybe Int))
--- @
---
--- TODO second proof is missing!!!!!!!!
---
---
---
---
