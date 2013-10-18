@@ -5,8 +5,6 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
-{- LANGUAGE PolyKinds #-}
-{- LANGUAGE DataKinds  #-}
 
 module Afp.As3
   ( -- * Task 4.3
@@ -17,15 +15,22 @@ module Afp.As3
 
     -- * Task 5.3
     one, two, randomN, sizedInt,
+    esizedInt, erandomN,
 
     -- * Task 6.1
     preserves, Contract (..), assert, (-->), pos, true,
+    
+    preservesPos, preservesPos',
+    -- $exc611
+    
+    allPos, allPos',
 
     -- * Task 8.4
     -- $exc84
     forceBoolList,
 
     -- * Task 8.5
+    -- $exc85
     T, T2, T4, T8, T16, f0, f1, f2, f3, f4)
 where
 
@@ -47,12 +52,8 @@ eqNil :: (a -> a -> Bool) -> (Nil a -> Nil a -> Bool)
 eqNil eqA Nil Nil = True
 
 -- 4.3.1
--- A type with a (forall) on the inside requires the extension RankNTypes to be enabled.
--- Try to understand what the difference is between a function of the type of eqCons
--- and a function with the same type but the (forall) omitted. Can you omit
--- the (forall) in the case of eqCons and does the function still work?
 
--- | 4.3.1 If the forall quantifier is omitted, an implicited forall quantifier outside the whole type expression is placed. The
+-- | If the forall quantifier is omitted, an implicited forall quantifier outside the whole type expression is placed. The
 --   type would loke something like this:
 --
 --   @
@@ -66,11 +67,8 @@ eqCons :: (forall b . (b -> b -> Bool) -> (t b -> t b -> Bool)) -> (a -> a -> Bo
 eqCons eqT eqA (Cons x xs) (Cons y ys) = eqA x y && eqT eqA xs ys
 
 -- 4.3.2
--- Task.
--- Again, try removing the (forall) from the type of eqSquare'.
--- Does the function still typecheck? Try to explain!
 
--- | 4.3.2 TODO doesn't work without forall, but why? should be the same story as in 431
+-- | It doesn't work when the forall quantifier is removed. The reason is exactly the same as for `eqCons`.
 eqSquare' :: (forall b . (b -> b -> Bool) -> (t b -> t b -> Bool)) -> (a -> a -> Bool) -> (Square' t a -> Square' t a -> Bool)
 eqSquare' eqT eqA (Zero xs) (Zero ys) = eqT (eqT eqA) xs ys
 eqSquare' eqT eqA (Succ xs) (Succ ys) = eqSquare' (eqCons eqT) eqA xs ys
@@ -83,18 +81,13 @@ instance Eq a => Eq (Square a) where
   (==) = eqSquare (==)
 
 -- 4.3.3
--- Systematically follow the scheme just presented in order to define a Functor instance
--- for square matrices. I.e., derive a function mapSquare such that you can define
 
--- | 4.3.3
--- ph - finished - unchecked
 mapNil :: (a -> b) -> (Nil a -> Nil b)
 mapNil fA Nil = Nil
 
 mapCons :: (forall b . (b -> d) -> (t b -> t d)) -> (a -> d) -> (Cons t a -> Cons t d)
 mapCons fT fA (Cons x xs) = Cons (fA x) (fT fA xs)
 
--- b and d have to be in the forall quantifier
 mapSquare' :: (forall b d . (b -> d) -> (t b -> t d)) -> (a -> d) -> (Square' t a -> Square' t d)
 mapSquare' fT fA (Zero xs) = Zero $ fT (fT fA) xs
 mapSquare' fT fA (Succ xs) = Succ $ mapSquare' (mapCons fT) fA xs
@@ -118,23 +111,24 @@ instance Functor Square where
 -- B a   ||- A ( Maybe a)                            inst A ( Maybe a ) => A ( Maybe ( Maybe a ) )
 -- -----------------------------------------------------------------------------------------------
 -- B a   ||- A ( Maybe ( Maybe a))
--- --------------------------------- [a <- Int]	
+-- --------------------------------- [a <- Int] 
 -- B Int ||- A ( Maybe ( Maybe Int))
 -- @
 --
 --
 -- @
--- Ø			class A a
+-- Ø            class A a
 -- ------------------------
--- Ø ||- class A a		inst A a => A (Maybe a)			class A a		(A a) => B a
--- -------------------------------------------- 		----------------------------
--- Ø ||- A a => A (Maybe a)								inst (A a, B a) => A [a]
+-- Ø ||- class A a      inst A a => A (Maybe a)         class A a       (A a) => B a
+-- --------------------------------------------         ----------------------------
+-- Ø ||- A a => A (Maybe a)                             inst (A a, B a) => A [a]
 -- ---------------------------------------------------------------------------------[a <- (Maybe a)]
--- Ø ||-  A (Maybe [a]) 																			inst A Bool
+-- Ø ||-  A (Maybe [a])                                                                             inst A Bool
 -- ------------------------------------------------------------------------------------------------------------- [a <- Bool]
 -- Ø ||- A (Maybe [Bool]) 
 -- @
---
+
+
 -- 5.3 (15%)
 one :: Int
 one = 1
@@ -143,7 +137,6 @@ two = 2
 randomN :: (RandomGen g) => Int -> g -> Int
 randomN n g = (fst (next g) `mod` (two * n + one)) - n
 -- | This is the most general type.
---   TODO evidence translation!!!
 sizedInt :: (Monad m, MonadTrans t, MonadReader Int (t m), RandomGen g, MonadReader g m) => t m Int
 sizedInt = do
   n <- ask
@@ -169,15 +162,18 @@ data ERandomGen g = ERandomGen
 
 -- | Class constraints are reintroduced in this definition to be able to use the std random generator. The class
 -- constraint could be omitted if the random generator would be reimplemented here.
-{-erandomgen_stdgen :: RandomGen g => ERandomGen g
+erandomgen_stdgen :: RandomGen g => ERandomGen g
 erandomgen_stdgen = ERandomGen
   { enext = next }
 
-emonadreader_randomgen :: ERandomGen g -> EMonad m -> EMonadReader g m
- emonadreader_randomgen rg m = EMonadReader
-  { eask = (\g -> () enext rg
-  , emonad = m }
--}
+
+newtype Identity a = Identity { runIdentity :: a }
+
+emonad_id :: EMonad Identity
+emonad_id = EMonad
+  { ecomp1 = \f g -> g (runIdentity f)
+  , ereturn = Identity }
+
 
 erandomN :: ERandomGen g -> Int -> g -> Int
 erandomN ergg n g = (fst ((enext ergg) g) `mod` (two * n + one)) - n
@@ -192,25 +188,18 @@ esizedInt emm emtt emritm ergg emrgm = s1 `cm1` s2
         (ereturn (emonad emritm)) (erandomN ergg n g)
       
 
-{-do
-  n <- ask
-  g <- lift ask
-  return (randomN n g)
--- TODO 5.3 evidence translation
--}
-
 -- 6.1 (25%)
 data Contract :: * -> * where
-	Pred :: (a -> Bool) -> Contract a
-	Fun :: Contract a -> Contract b -> Contract (a -> b)
-	DFun :: Contract a -> (a -> Contract b) -> Contract (a -> b)
-	List :: Contract a -> Contract [a]
+    Pred :: (a -> Bool) -> Contract a
+    Fun :: Contract a -> Contract b -> Contract (a -> b)
+    DFun :: Contract a -> (a -> Contract b) -> Contract (a -> b)
+    List :: Contract a -> Contract [a]
 
 assert :: Contract a -> a -> a
-assert (Pred p) 	x 	 = if p x then x else error "contract violation"
+assert (Pred p)     x    = if p x then x else error "contract violation"
 assert (Fun pre post) f  = assert post . f . assert pre
 assert (DFun pre post) f = \x -> assert (post x) (f $ assert pre x) 
-assert (List c) xs 		 = map (assert c) xs
+assert (List c) xs       = map (assert c) xs
 
 -- | A contract which test is the number is positive
 pos :: (Num a, Ord a) => Contract a
@@ -231,23 +220,23 @@ x --> y = DFun x (const y)
 -- | A contract suitable for the list index function (!!)
 (!!) :: Contract ([a] -> Int -> a)
 (!!) = DFun true (\xs -> DFun (Pred (check xs)) (\n -> Pred (\x -> True)))
-	where 
-		check :: [a] -> Int -> Bool
-		check (x:_)	 0 = True
-		check [] 	 _ = False
-		check (_:xs) n = check xs (n - 1)
+    where 
+        check :: [a] -> Int -> Bool
+        check (x:_)  0 = True
+        check []     _ = False
+        check (_:xs) n = check xs (n - 1)
 
 -- | preserves contract
 preserves :: Eq b => (a -> b) -> Contract (a -> a)
 preserves f = DFun true (preserve f)
-	where
-		preserve :: Eq b => (a -> b) -> a -> Contract a
-		preserve f = (\l -> Pred ((==) l . f)) . f 
+    where
+        preserve :: Eq b => (a -> b) -> a -> Contract a
+        preserve f = (\l -> Pred ((==) l . f)) . f 
 
 -- test functions for preserves
-test3 = assert (preserves length) reverse "Hello" 			-- "olleH"
-test4 = assert (preserves length) (take 5) "Hello"	 		-- "Hello"
-test5 = assert (preserves length) (take 5) "Hello world" 	-- bottom
+test3 = assert (preserves length) reverse "Hello"           -- "olleH"
+test4 = assert (preserves length) (take 5) "Hello"          -- "Hello"
+test5 = assert (preserves length) (take 5) "Hello world"    -- bottom
 
 -- | preserves the positive number
 preservesPos :: Contract (Integer -> Integer)
@@ -256,24 +245,28 @@ preservesPos' :: Contract (Integer -> Integer)
 preservesPos' = pos --> pos
 
 -- test functions for preservesPos
-test6 = assert preservesPos (subtract 5) 5 			-- = 0 which is an error violation
-test7 = assert preservesPos' (subtract 5) 5 		-- = 0 which is an error violation
+test6 = assert preservesPos (subtract 5) 5          -- = 0 which is an error violation
+test7 = assert preservesPos' (subtract 5) 5         -- = 0 which is an error violation
 
-test8 = assert preservesPos id (-5) 			-- = -5 
-test9 = assert preservesPos' id (-5) 			-- = error violation
+test8 = assert preservesPos id (-5)             -- = -5 
+test9 = assert preservesPos' id (-5)            -- = error violation
 
-{-	There is no difference in the type of preservesPos and preservesPos'. The test above show that there is a difference in the impentation of the function. When appling the identity function to the function preservesPos you will not receive an error as the input is the same as the input. In the function preservesPos prime you will receive an error violation as the contact will be check before and after the identity function.
--}
+-- $exc611
+--
+-- There is no difference in the type of preservesPos and preservesPos'. The test above show that there is a difference in the impentation of the function. 
+-- When appling the identity function to the function preservesPos you will not receive an error as the input is the same as the input. 
+-- In the function preservesPos prime you will receive an error violation as the contact will be check before and after the identity function.
+
+
 
 allPos = List pos
 allPos' = Pred (all (>0))
 
-test10 = assert allPos [1,2,-4,5]			-- = [1,2, error violation
-test11 = assert allPos' [1,2,-4,5] 			-- = error violation
+test10 = assert allPos [1,2,-4,5]           -- = [1,2, error violation
+test11 = assert allPos' [1,2,-4,5]          -- = error violation
 
-{-	Like the two functions above of the preservesPos the test10 will check the contract when the element is needed to be printed due to lazy evaluation. The test11 shows that the contract will be tested on all the elements before the list would be printed. 
+{-  Like the two functions above of the preservesPos the test10 will check the contract when the element is needed to be printed due to lazy evaluation. The test11 shows that the contract will be tested on all the elements before the list would be printed. -}
 
--}
 
 -- 8.4 (10%)
 
@@ -316,6 +309,5 @@ f3   = f2 . f2
 f4   = f3 . f3
 -- f5   = f4 . f4
 
-{-	For each the types will grow exponential. If you write out the types you will get f1 :: a -> T (T a) and f2 :: a -> T (T (T (T a))). The function f5 will have 32 T's. When that function is uncommented the compiler wouldn't complete any more in a reasonable time.
--}
+-- $exc85  For each the types will grow exponential. If you write out the types you will get f1 :: a -> T (T a) and f2 :: a -> T (T (T (T a))). The function f5 will have 32 T's. When that function is uncommented the compiler wouldn't complete any more in a reasonable time.
 
