@@ -5,6 +5,8 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
+{- LANGUAGE PolyKinds #-}
+{- LANGUAGE DataKinds  #-}
 
 module Afp.As3
   ( -- * Task 4.3
@@ -17,7 +19,7 @@ module Afp.As3
     one, two, randomN, sizedInt,
 
     -- * Task 6.1
-    preserves, Contract (..),
+    preserves, Contract (..), assert, (-->), pos, true,
 
     -- * Task 8.4
     -- $exc84
@@ -181,12 +183,13 @@ erandomN :: ERandomGen g -> Int -> g -> Int
 erandomN ergg n g = (fst ((enext ergg) g) `mod` (two * n + one)) - n
 
 esizedInt :: EMonad m -> EMonadTrans t -> EMonadReader Int (t m) -> ERandomGen g -> EMonadReader g m -> t m Int
-esizedInt emm emtt emritm ergg emrgm =
-  let cm1 = ecomp1 (emonad emritm)
-      s = (eask emritm) `cm1` \n -> undefined
---          ((elift emtt) emm (eask emrgm)) `cm1` \g -> undefined
---          (ereturn (emonad emritm)) (erandomN ergg n g)
-    in s
+esizedInt emm emtt emritm ergg emrgm = s1 `cm1` s2
+  where
+    cm1 = ecomp1 (emonad emritm)
+    cm2 = ecomp1 (emonad emritm)
+    s1 = (eask emritm)
+    s2 = \n -> (elift emtt) (emonad emrgm) (eask emrgm) `cm2` \g ->
+        (ereturn (emonad emritm)) (erandomN ergg n g)
       
 
 {-do
@@ -197,7 +200,6 @@ esizedInt emm emtt emritm ergg emrgm =
 -}
 
 -- 6.1 (25%)
--- laurens
 data Contract :: * -> * where
 	Pred :: (a -> Bool) -> Contract a
 	Fun :: Contract a -> Contract b -> Contract (a -> b)
@@ -210,23 +212,23 @@ assert (Fun pre post) f  = assert post . f . assert pre
 assert (DFun pre post) f = \x -> assert (post x) (f $ assert pre x) 
 assert (List c) xs 		 = map (assert c) xs
 
--- ! A contract which test is the number is positive
+-- | A contract which test is the number is positive
 pos :: (Num a, Ord a) => Contract a
 pos = Pred (>0)
 
--- ! test the functionality of pos contract
+-- | test the functionality of pos contract
 test1 = assert pos 2 -- == 2
 test2 = assert pos 0 -- == error
 
--- ! A contract where true x == x holds.
+-- | A contract where true x == x holds.
 true :: Contract a 
 true = Pred (const True)
 
--- ! A combinator that combines two contracts
+-- | A combinator that combines two contracts
 (-->) :: Contract a -> Contract b -> Contract (a -> b)
 x --> y = DFun x (const y)
 
--- ! A contract suitable for the list index function (!!)
+-- | A contract suitable for the list index function (!!)
 (!!) :: Contract ([a] -> Int -> a)
 (!!) = DFun true (\xs -> DFun (Pred (check xs)) (\n -> Pred (\x -> True)))
 	where 
@@ -235,25 +237,25 @@ x --> y = DFun x (const y)
 		check [] 	 _ = False
 		check (_:xs) n = check xs (n - 1)
 
--- ! preserves contract
+-- | preserves contract
 preserves :: Eq b => (a -> b) -> Contract (a -> a)
 preserves f = DFun true (preserve f)
 	where
 		preserve :: Eq b => (a -> b) -> a -> Contract a
 		preserve f = (\l -> Pred ((==) l . f)) . f 
 
--- ! test functions for preserves
+-- test functions for preserves
 test3 = assert (preserves length) reverse "Hello" 			-- "olleH"
 test4 = assert (preserves length) (take 5) "Hello"	 		-- "Hello"
 test5 = assert (preserves length) (take 5) "Hello world" 	-- bottom
 
--- ! preserves the positive number
+-- | preserves the positive number
 preservesPos :: Contract (Integer -> Integer)
 preservesPos = preserves (>0)
 preservesPos' :: Contract (Integer -> Integer)
 preservesPos' = pos --> pos
 
--- ! test functions for preservesPos
+-- test functions for preservesPos
 test6 = assert preservesPos (subtract 5) 5 			-- = 0 which is an error violation
 test7 = assert preservesPos' (subtract 5) 5 		-- = 0 which is an error violation
 
@@ -274,7 +276,6 @@ test11 = assert allPos' [1,2,-4,5] 			-- = error violation
 -}
 
 -- 8.4 (10%)
--- ph; UNCHECKED
 
 -- $exc84
 -- 
