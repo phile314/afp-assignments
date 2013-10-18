@@ -122,8 +122,52 @@ sizedInt = do
   g <- lift ask
   return (randomN n g)
 
--- TODO 5.3 evidence translation
 
+-- Evidence Translation
+
+data EMonad m = EMonad
+  { ecomp1 :: forall a b . m a -> (a -> m b) -> m b
+  , ereturn :: forall a . a -> m a }
+
+data EMonadTrans t = EMonadTrans
+  { elift :: forall a m . EMonad m -> m a -> t m a }
+
+data EMonadReader r m = EMonadReader
+  { eask :: m r
+  , emonad :: EMonad m }
+
+data ERandomGen g = ERandomGen
+  { enext :: forall g . g -> (Int, g) }
+
+-- | Class constraints are reintroduced in this definition to be able to use the std random generator. The class
+-- constraint could be omitted if the random generator would be reimplemented here.
+erandomgen_stdgen :: RandomGen g => ERandomGen g
+erandomgen_stdgen = ERandomGen
+  { enext = next }
+
+emonadreader_randomgen :: ERandomGen g -> EMonad m -> EMonadReader g m
+emonadreader_randomgen rg m = EMonadReader
+  { eask = enext rg
+  , emonad = m }
+
+erandomN :: ERandomGen g -> Int -> g -> Int
+erandomN ergg n g = (fst ((enext ergg) g) `mod` (two * n + one)) - n
+
+esizedInt :: EMonad m -> EMonadTrans t -> EMonadReader Int (t m) -> ERandomGen g -> EMonadReader g m -> t m Int
+esizedInt emm emtt emritm ergg emrgm =
+  let cm = ecomp1 emm
+      s = (eask emritm) `cm` \n ->
+        (elift emtt) (emonad emrgm) (eask emrgm) `cm` \g ->
+        (ereturn emm) (erandomN ergg n g)
+    in s
+      
+
+{-do
+  n <- ask
+  g <- lift ask
+  return (randomN n g)
+-- TODO 5.3 evidence translation
+-}
 
 -- 6.1 (25%)
 -- laurens
@@ -259,3 +303,9 @@ f4   = f3 . f3
 -- --------------------------------- [a <- Int]
 -- B Int ||- A ( Maybe ( Maybe Int))
 -- @
+--
+-- TODO second proof is missing!!!!!!!!
+--
+--
+--
+--
