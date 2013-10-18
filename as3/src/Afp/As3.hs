@@ -163,28 +163,29 @@ data EMonadReader r m = EMonadReader
   , emonad :: EMonad m }
 
 data ERandomGen g = ERandomGen
-  { enext :: forall g . g -> (Int, g) }
+  { enext :: g -> (Int, g) }
 
 -- | Class constraints are reintroduced in this definition to be able to use the std random generator. The class
 -- constraint could be omitted if the random generator would be reimplemented here.
-erandomgen_stdgen :: RandomGen g => ERandomGen g
+{-erandomgen_stdgen :: RandomGen g => ERandomGen g
 erandomgen_stdgen = ERandomGen
   { enext = next }
 
 emonadreader_randomgen :: ERandomGen g -> EMonad m -> EMonadReader g m
-emonadreader_randomgen rg m = EMonadReader
-  { eask = enext rg
+ emonadreader_randomgen rg m = EMonadReader
+  { eask = (\g -> () enext rg
   , emonad = m }
+-}
 
 erandomN :: ERandomGen g -> Int -> g -> Int
 erandomN ergg n g = (fst ((enext ergg) g) `mod` (two * n + one)) - n
 
 esizedInt :: EMonad m -> EMonadTrans t -> EMonadReader Int (t m) -> ERandomGen g -> EMonadReader g m -> t m Int
 esizedInt emm emtt emritm ergg emrgm =
-  let cm = ecomp1 emm
-      s = (eask emritm) `cm` \n ->
-        (elift emtt) (emonad emrgm) (eask emrgm) `cm` \g ->
-        (ereturn emm) (erandomN ergg n g)
+  let cm1 = ecomp1 (emonad emritm)
+      s = (eask emritm) `cm1` \n -> undefined
+--          ((elift emtt) emm (eask emrgm)) `cm1` \g -> undefined
+--          (ereturn (emonad emritm)) (erandomN ergg n g)
     in s
       
 
@@ -277,14 +278,15 @@ test11 = assert allPos' [1,2,-4,5] 			-- = error violation
 
 -- $exc84
 -- 
--- If the type of forceBoolList were specified as [Bool] -> [Bool], evaluation would not be forced until the actual
--- return value of forceBoolList were pattern matched on.
+-- If the type of forceBoolList were specified as [Bool] -> [Bool], evaluation would not be forced until
+-- the bool list were pattern matched on, because there is no reason to compute the result of the function
+-- prior to that.
 -- With the actual type in use here, a dependency between the first and second argument is created.
 -- As soon as the return value of the function is pattern matched on,
 -- evaluation of the first argument is enforced.
 -- Exactly the same reasoning applies for `seq`.
 
--- | Evaluates the first argument to full normal form as soon as the return value is used.
+-- | Evaluates the first argument to full normal form as soon as the return value is evaluated.
 forceBoolList :: [Bool] -> r -> r
 forceBoolList (True:xs) r = forceBoolList xs r
 forceBoolList (False:xs)r = forceBoolList xs r
