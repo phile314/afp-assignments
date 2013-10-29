@@ -4,12 +4,12 @@ where
 
 import Afp.As4.Messages
 import System.IO
-import System.IO.Error
+--import System.IO.Error
 import Network
 import Control.Monad
 import Control.Concurrent
 import Control.Concurrent.STM
-import Control.Exception (finally, catchJust)
+import qualified Control.Exception as E
 import Data.Maybe
 import Data.Map
 import Afp.As4.ChConn
@@ -45,21 +45,12 @@ writeLoop conn = do
                     cwrite conn (CSpeak str)
                     writeLoop conn
 
-readLoop conn = do
-    msg <- (cread conn)
-    putStrLn (toStr msg)
-    readLoop conn
-
-
-{-cread' :: ChatState' -> ConnS -> (MsgC2S -> IO ()) -> IO ()
-cread' cs conn cont = do
-    msg <- cread conn
-    case msg of
-        SEOF -> do
-                    putStrLn "Lost server connection, terminating..."
-        a    -> cont a
-    
-
--}
-
+readLoop conn =
+    let f = do
+            msg <- (cread conn)
+            putStrLn (toStr msg)
+            readLoop conn
+        errH :: IOError -> IO ()
+        errH _ = putStrLn "Error occured, exiting..."
+    in f `E.catch` errH
 

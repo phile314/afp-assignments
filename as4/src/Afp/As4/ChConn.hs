@@ -1,6 +1,7 @@
+{-# LANGUAGE DeriveDataTypeable  #-}
 module Afp.As4.ChConn
   ( Conn (..)
-  , withConn )
+  , withConn)
 where
 
 import Afp.As4.Messages
@@ -10,7 +11,8 @@ import Network
 import Control.Monad
 import Control.Concurrent
 import Control.Concurrent.STM
-import Control.Exception (finally, catchJust)
+import Data.Typeable
+import Control.Exception (finally, catchJust, Exception(..), throw)
 import Data.Maybe
 import Data.Map
 
@@ -26,29 +28,27 @@ data Conn a b = Conn
 
 
 
-
 withConn :: (Msg a, Msg b) => (Handle, HostName, PortNumber) -> (Conn a b -> IO ()) -> IO ()
 withConn (h, hn, pn) cont = do
 
   hSetBuffering h NoBuffering
   hSetEncoding h utf8
 
-  (tr, tw, conn) <- atomically $ do
+  (tw, conn) <- atomically $ do
     tw <- newTChan
-    tr <- newTChan
     tnn <- newTVar Nothing
+
     let c = Conn {
         cwrite = \m -> atomically $ writeTChan tw (Just m)
-      , cread  = atomically $ readTChan tr
-      , cclose = cclose' c tw tr
+      , cread  = cread' c
+      , cclose = cclose' c tw
       , handle = h
       , hostName = hn
       , portNumber = pn
       , nickName = tnn }
 
-    return (tr, tw, c)
+    return (tw, c)
 
-  forkIO $ reader tr conn
   forkIO $ writer tw conn
   cont conn
   
@@ -63,24 +63,17 @@ writer tw conn = do
                         writer tw conn
         Nothing -> return ()
 
-reader :: (Msg b, Msg a) => TChan b -> Conn a b -> IO ()
-reader tr conn = do
-    catchJust (\e -> if isEOFError e then Just e else Nothing) (do
-        msg <- hGetLine (handle conn)
-        case fromStr msg of
-            (Just msg') -> atomically $ writeTChan tr msg'
-            Nothing     -> do
-                             (cwrite conn) errMsg
-        reader tr conn)
-        eofHandler
-  where
-    eofHandler _ = do
-      cclose conn
+cread' :: (Msg b, Msg a) => Conn a b -> IO b
+cread' conn = do
+    finally (do
+            msg <- hGetLine (handle conn)
+            case fromStr msg of
+                (Just msg') -> return msg'
+                Nothing     -> (cwrite conn) errMsg >> cread' conn)
+        (cclose conn)
 
 
-cclose' conn tw tr = do
+cclose' conn tw = do
     atomically $ do
-        writeTChan tr eofMsg
         writeTChan tw Nothing
-    -- TODO stop reader cleanly
     hClose (handle conn)
