@@ -4,6 +4,7 @@ import System.Environment
 import Afp.As4.ChServer
 import Afp.As4.ChClient
 
+-- | Run the chat programs.
 main :: IO ()
 main = do
     args <- getArgs

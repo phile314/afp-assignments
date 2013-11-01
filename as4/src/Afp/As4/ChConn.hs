@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveDataTypeable  #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances  #-}
+-- | A socket wrapper.
 module Afp.As4.ChConn
   ( Conn (..)
   , withConn
@@ -25,12 +26,16 @@ import Data.Map
 
 type NickName = String
 
-
+-- | A message.
 class Msg a where
+    -- | Encodes a message in a string.
     toStr :: a -> String
+    -- | Decodes a message from a string.
     fromStr :: String -> Maybe a
+    -- | Creates an error message.
     errMsg :: String -> a
 
+-- | The Client-to-Server message type. Provides a way to signal the end of the connection.
 data C2SMsg
   = S String
   | Exit

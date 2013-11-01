@@ -1,6 +1,7 @@
 {-# LANGUAGE DoAndIfThenElse #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 
+-- | A chat server.
 module Afp.As4.ChServer
   ( runServer )
 where

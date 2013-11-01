@@ -1,4 +1,5 @@
 {-# LANGUAGE ScopedTypeVariables #-}
+-- | A chat client.
 module Afp.As4.ChClient
   ( runClient )
 where

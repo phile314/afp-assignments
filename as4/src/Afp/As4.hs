@@ -1,19 +1,11 @@
 module Afp.As4
-  ( -- * Task 10.3
-
-    -- * Task 11.1
+  ( -- * Task 11.1
 
     -- * Task 11.2
   )
 where
 
 import Data.Generics
-
--- 10.3
--- ph
---
--- TODO
-
 
 
 -- 11.1
