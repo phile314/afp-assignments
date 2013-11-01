@@ -3,9 +3,10 @@
 
 -- | A chat server.
 module Afp.As4.ChServer
-  ( runServer )
+  ( runServer, main )
 where
 
+import System.Environment
 import Debug.Trace
 import System.IO
 import System.IO.Error
@@ -36,6 +37,11 @@ type ConnS1 = Conn String C2SMsg
 type ConnS2 = Conn String String
 
 type NickName = String
+
+
+-- | Run the server.
+main :: IO ()
+main = runServer 9595
 
 -- | Run the server.
 runServer :: Int -> IO ()
@@ -89,7 +95,7 @@ handleJoin :: ChatState' -> ConnS2 -> IO ()
 handleJoin cs conn = do
     nick <- cread conn
     case nick of
-        [] -> cwrite conn (errMsg "Nick too short.") >> handleJoin cs conn
+        [] -> cwrite conn (errMsg "Nick too short, enter another nick.") >> handleJoin cs conn
         _  -> do
             cs' <- atomically $ do
                 cs' <- readTVar cs
@@ -100,7 +106,7 @@ handleJoin cs conn = do
                     writeTVar (nickName conn) (Just nick)
                     return $ Right ()
             case cs' of
-                Left _  -> cwrite conn (errMsg "Nick already in use.")     >> handleJoin cs conn
+                Left _  -> cwrite conn (errMsg "Nick already in use, enter another nick.")     >> handleJoin cs conn
                 Right _ -> broadcast cs ("* " ++ nick ++ " joined.") nick  >> handleMsgs cs conn
 
 -- | Send a message to all clients, except to the sender.

@@ -56,9 +56,14 @@ library
   build-depends:       base >=4.5, network >=2.3.1, containers >=0.4.2, stm >=2.4, syb >=0.3.7, safe >=0.3.3
 
 
-executable main
+executable client
     hs-source-dirs:     src/
-    main-is:            Main.hs
+    main-is:            Afp/As4/ChClient.hs
     build-depends:      base >= 4.5, network >=2.3.1, containers >=0.4.2, stm >=2.4, syb >=0.3.7, safe >=0.3.3
-    ghc-options:        -threaded
+    ghc-options:        -threaded -main-is Afp.As4.ChClient
 
+executable server
+    hs-source-dirs:     src/
+    main-is:            Afp/As4/ChServer.hs
+    build-depends:      base >= 4.5, network >=2.3.1, containers >=0.4.2, stm >=2.4, syb >=0.3.7, safe >=0.3.3
+    ghc-options:        -threaded -main-is Afp.As4.ChServer

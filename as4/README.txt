@@ -5,10 +5,9 @@ Laurens van den Brink, 4022831, l.vandenbrink1@students.uu.nl
 
 
 
-
-
 -- What's Where --
-everything -> src/Afp/As4.hs
+10.3       -> src/Main.hs, src/Afp/As4/*.hs
+11.1, 11.2 -> src/Afp/As4.hs
 
 
 -- Building --
@@ -17,6 +16,10 @@ everything -> src/Afp/As4.hs
 $ cabal configure
 $ cabal build
 
+Running the chat server:
+$ ./server
+Running a client:
+$ ./client localhost myNick
 
 -- References --
 

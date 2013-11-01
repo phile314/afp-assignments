@@ -1,9 +1,10 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 -- | A chat client.
 module Afp.As4.ChClient
-  ( runClient )
+  ( runClient, main )
 where
 
+import System.Environment
 import System.IO
 import Network
 import Control.Monad
@@ -11,11 +12,20 @@ import Control.Concurrent
 import Control.Concurrent.STM
 import qualified Control.Exception as E
 import Data.Maybe
-import Data.Map
+import Data.Map hiding (null)
 import Afp.As4.ChConn
 import System.IO.Error (isEOFError)
 
 type ConnC = Conn C2SMsg String
+
+
+-- | Run the client.
+main :: IO ()
+main = do
+    args <- getArgs
+    case args of
+        host:rem -> runClient (if null rem then Nothing else Just $ head rem) host 9595
+                 
 
 -- | Run the client.
 runClient :: (Maybe String) -> String -> Int -> IO ()
