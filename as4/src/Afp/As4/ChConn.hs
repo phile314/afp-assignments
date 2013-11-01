@@ -59,6 +59,8 @@ data Conn a b = Conn
 
 
 -- | Initializes the connection, executes the given continuation and closes the connection afterwards.
+--   It is safe to call `cwrite` from as many threads as desired. Calling `cread` from more than one thread
+--   is not guarantued to be safe.
 withConn :: (Msg a, Msg b) => (Handle, HostName, PortNumber) -> (Conn a b -> IO ()) -> Bool -> IO ()
 withConn (h, hn, pn) cont dbg = do
 
@@ -90,9 +92,9 @@ withConn (h, hn, pn) cont dbg = do
   
 
 -- | Reads messages from the given channel and writes them to the socket.
---   This ensures that all messages are written correctly onto the socket,
---   as it is not specified in the documentation to which extent writing
---   to sockets is thread-safe.
+--   Ensures that all messages are written correctly onto the socket. This is
+--   done using a seperate writer thread, as it is not specified in the documentation
+--   to which extent writing to sockets is thread-safe.
 writer :: Msg a => TChan (Maybe a) -> Conn a b -> IO ()
 writer tw conn = do
     msg <- atomically $ readTChan tw

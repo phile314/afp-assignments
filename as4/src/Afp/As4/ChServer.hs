@@ -2,7 +2,7 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 
 module Afp.As4.ChServer
-  ( runServer, runServer' )
+  ( runServer )
 where
 
 import Debug.Trace
@@ -27,14 +27,16 @@ data ChatState = ChatState
   { clients :: Map NickName ConnS2 }
 type ChatState' = TVar ChatState
 
+-- We need to wrap the message to transport the exit notification.
+-- We could also encode them using a magic string, but to do this
+-- proper this would require us to have some form of string escaping.
+-- With an extra type, we can just leverage the show/read functions.
 type ConnS1 = Conn String C2SMsg
 type ConnS2 = Conn String String
 
 type NickName = String
 
-runServer' :: IO ()
-runServer' = runServer 9595
-
+-- | Run the server.
 runServer :: Int -> IO ()
 runServer p = withSocketsDo $ do
   s <- listenOn (PortNumber (fromIntegral p))
@@ -43,6 +45,7 @@ runServer p = withSocketsDo $ do
 
   E.finally (mainLoop cs s) (sClose s)
 
+-- | Main loop - accept connections and start threads to handle them.
 mainLoop :: ChatState' -> Socket -> IO ()
 mainLoop cs s = do
   hi@(h,_, _) <- accept s
@@ -51,6 +54,8 @@ mainLoop cs s = do
 
   mainLoop cs s
 
+-- | Handles exceptions / closing of connections. Removes closed connections
+--   from the global state.
 handleExs :: ChatState' -> ConnS1 -> (ConnS2 -> IO ()) -> IO ()
 handleExs cs conn p = do
     let f = (p conn' `E.finally` delConn) `E.catch` errH
@@ -58,6 +63,7 @@ handleExs cs conn p = do
     where
         errH :: ExitException -> IO ()
         errH _ = return ()
+        -- handle Exit messages here and never return them back, instead throw an exception to leave the read loop
         conn' :: ConnS2
         conn' = conn { cread =
             E.onException (do
@@ -67,6 +73,7 @@ handleExs cs conn p = do
                     (S str) -> return str
                 ) (cclose conn')}
 
+        -- client disappeared, remove it from global state and broadcast notification
         delConn = do
                     nick <- atomically $ do
                         nick <- readTVar $ nickName conn
@@ -75,6 +82,8 @@ handleExs cs conn p = do
                     when (isJust nick) $ broadcast cs ("* " ++ (fromJust nick) ++ " left.") (fromJust nick)
 
 
+-- | Handle joining a room and validiting nick names. Goes to handleMsgs when successful.
+--   (this is kind of like continuation passing, but we always have the same continuation)
 handleJoin :: ChatState' -> ConnS2 -> IO ()
 handleJoin cs conn = do
     nick <- cread conn
@@ -93,6 +102,7 @@ handleJoin cs conn = do
                 Left _  -> cwrite conn (errMsg "Nick already in use.")     >> handleJoin cs conn
                 Right _ -> broadcast cs ("* " ++ nick ++ " joined.") nick  >> handleMsgs cs conn
 
+-- | Send a message to all clients, except to the sender.
 broadcast :: ChatState' -> String -> NickName -> IO ()
 broadcast cs msg snd = do
     rec <- atomically $ do
@@ -104,6 +114,7 @@ broadcast cs msg snd = do
         return cs'
     mapM_ (\c -> cwrite c msg) rec
 
+-- | Broadcast all incoming messages to all other clients.
 handleMsgs :: ChatState' -> ConnS2 -> IO ()
 handleMsgs cs conn = do
     m <- cread conn

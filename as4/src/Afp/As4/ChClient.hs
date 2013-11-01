@@ -16,7 +16,7 @@ import System.IO.Error (isEOFError)
 
 type ConnC = Conn C2SMsg String
 
-
+-- | Run the client.
 runClient :: (Maybe String) -> String -> Int -> IO ()
 runClient nick hn pn = withSocketsDo $ do
   let pn' = fromIntegral pn
