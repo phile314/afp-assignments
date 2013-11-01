@@ -36,9 +36,6 @@ type ChatState' = TVar ChatState
 type ConnS1 = Conn String C2SMsg
 type ConnS2 = Conn String String
 
-type NickName = String
-
-
 -- | Run the server.
 main :: IO ()
 main = runServer 9595

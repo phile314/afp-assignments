@@ -5,10 +5,9 @@
 module Afp.As4.ChConn
   ( Conn (..)
   , withConn
-  , errMsg
-  , toStr
-  , fromStr
-  , C2SMsg (..) )
+  , C2SMsg (..)
+  , NickName
+  , Msg (fromStr, toStr, errMsg))
 where
 
 import Safe
@@ -23,7 +22,7 @@ import Control.Exception (finally, catchJust, Exception(..), throw, bracket, onE
 import Data.Maybe
 import Data.Map
 
-
+-- | A nick name.
 type NickName = String
 
 -- | A message.
