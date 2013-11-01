@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeOperators, FlexibleInstances #-}
+{-# LANGUAGE TypeOperators, FlexibleInstances, FlexibleContexts, DefaultSignatures #-}
 module Afp.As4
   ( -- * Task 11.1
 
@@ -39,33 +39,42 @@ prop_ShowRead x = x == (greadx $ gshowx x)
 
 -- 11.2
 
+dReadsPrec :: DReads a => Int -> ReadS a
+dReadsPrec n = readPrec_to_S dRead n
 
-class DRead f where
-   hreader :: ReadPrec a -> Bool -> ReadPrec (f a)
-
-instance DRead D.U1 where
-   hreader _ _ = return D.U1
-
-instance (Read a) => DRead (D.K1 i a) where
-   hreader _ _ = liftM D.K1 (readS_to_Prec readsPrec)
-
-instance (DRead f, DRead g) => DRead (f D.:+: g) where
-   hreader f r = liftM D.L1 (hreader f r) +++ liftM D.R1 (hreader f r)
-
-instance (DRead f, DRead g) => DRead (f D.:*: g) where
-   hreader f r = do l' <- hreader f r
-                    when r $ do Punc "," <- lexP
-                                return ()
-                    r' <- hreader f r
-                    return (l' D.:*: r')
-
-instance (D.Constructor c) => DRead (D.M1 D.C c a) where
-	hreader f _ = undefined
-instance (D.Constructor c) => DRead (D.M1 D.S c a) where
-	hreader f _ = undefined
-
--- dRead :: (D.Generic a, DRead (D.Rep a)) => String -> a
-dRead s = case [x |  (x,remain) <- readsPrec 0 s , all isSpace remain] of
+dReads :: (DReads a) => String -> a
+dReads s = case [x |  (x,remain) <- dReadsPrec 0 s , all isSpace remain] of
            [x] -> x 
            [ ] -> error "no parse"
            _   -> error "ambiguous parse"
+
+class DReads a where
+	dRead :: ReadPrec a
+	default dRead :: (D.Generic a, DRead (D.Rep a)) => ReadPrec a
+	dRead = liftM  D.to (dReader undefined False)
+
+class DRead f where
+   dReader :: ReadPrec a -> Bool -> ReadPrec (f a)
+
+instance DRead D.U1 where
+   dReader _ _ = return D.U1
+
+instance (DReads a) => DRead (D.K1 i a) where
+   dReader _ _ = liftM D.K1 dRead
+
+instance (DRead f, DRead g) => DRead (f D.:+: g) where
+   dReader f r = liftM D.L1 (dReader f r) +++ liftM D.R1 (dReader f r)
+
+instance (DRead f, DRead g) => DRead (f D.:*: g) where
+   dReader f r = do l' <- dReader f r
+                    when r $ do Punc "," <- lexP
+                                return ()
+                    r' <- dReader f r
+                    return (l' D.:*: r')
+
+instance (D.Constructor c) => DRead (D.M1 D.C c a) where
+	dReader f _ = undefined
+instance (D.Constructor c) => DRead (D.M1 D.S c a) where
+	dReader f _ = undefined
+instance (D.Constructor c) => DRead (D.M1 D.D c a) where
+	dReader f _ = undefined
